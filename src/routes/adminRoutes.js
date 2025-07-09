@@ -14,5 +14,7 @@ router.put('/:id', upload.single('image'), adminController.updateAdmin);
 router.get('/', adminController.getAllAdmins);
 router.get('/:id', adminController.getAdminById);
 router.delete('/:id', adminController.deleteAdmin);
+router.put('/:id/change-password', adminController.changeAdminPassword); // Change own password
+
 
 module.exports = router;
