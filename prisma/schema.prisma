@@ -32,32 +32,35 @@ model Admin {
 
 // Partner model
 model Partner {
-  id               String   @id @default(cuid())
-  email            String   @unique
-  password         String?
-  name             String
-  skillSet         String[]
-  industryExp      String[]
-  country          String?
-  region           String?
-  profilePhoto     String?
-  hourlyRate       Decimal?
-  portfolioLink    String?
-  isActive         Boolean  @default(true)
-  rating           Decimal? @default(0)
-  totalEarnings    Decimal  @default(0)
-  availableBalance Decimal  @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String?   // Keep as optional initially
+  name              String
+  skillSet          String[]
+  industryExp       String[]
+  country           String?
+  region            String?
+  profilePhoto      String?
+  hourlyRate        Decimal?
+  portfolioLink     String?
+  isActive          Boolean   @default(false) // Default to false, activated upon password setup
+  rating            Decimal?  @default(0)
+  totalEarnings     Decimal   @default(0)
+  availableBalance  Decimal   @default(0)
+  // New fields for email verification/password setup
+  verificationToken String?   @unique
+  verificationExpires DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
-  createdBy        Admin           @relation(fields: [createdById], references: [id])
-  createdById      String
-  assignedProjects Project[]
-  milestones       Milestone[]
-  withdrawals      Withdrawal[]
-  supportTickets   SupportTicket[]
-  Lead             Lead[]
+  createdBy         Admin     @relation(fields: [createdById], references: [id])
+  createdById       String
+  assignedProjects  Project[]
+  milestones        Milestone[]
+  withdrawals       Withdrawal[]
+  supportTickets    SupportTicket[]
+  Lead              Lead[]
 
   @@map("partners")
 }
@@ -65,20 +68,26 @@ model Partner {
 // Client model
 model Client {
   id          String   @id @default(cuid())
+  name        String
   email       String   @unique
   password    String?
-  name        String
+  phone       String?
   companyName String?
-  isActive    Boolean  @default(true)
+  isActive          Boolean                   @default(false) // Changed: Set to false initially, activated upon email verification
+  isEmailVerified   Boolean                   @default(false) // Set to true after email verification
+  // Add token fields directly to Client model for direct signup flow
+  verificationToken String?                   @unique
+  verificationExpires DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  leads          Lead[]
-  projects       Project[]
-  payments       Payment[]
-  supportTickets SupportTicket[]
-  invoices       Invoice[]
+  leads                   Lead[]
+  projects                Project[]
+  payments                Payment[]
+  supportTickets          SupportTicket[]
+  invoices                Invoice[]
+  MaintenanceSubscription MaintenanceSubscription[]
 
   @@map("clients")
 }
@@ -88,10 +97,14 @@ model Lead {
   id              String     @id @default(cuid())
   name            String
   email           String
+  phone           String?
   companyName     String?
   projectCategory String
+  porjectTitle    String
   description     String
+  keyFeatures     String?
   budgetRange     String
+  timeline        String?
   status          LeadStatus @default(PENDING)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -129,18 +142,19 @@ model Project {
   updatedAt       DateTime      @updatedAt
 
   // Relations
-  client         Client          @relation(fields: [clientId], references: [id])
-  clientId       String
-  partner        Partner         @relation(fields: [partnerId], references: [id])
-  partnerId      String
-  managedBy      Admin           @relation(fields: [adminId], references: [id])
-  adminId        String
-  lead           Lead?           @relation(fields: [leadId], references: [id])
-  leadId         String?         @unique
-  milestones     Milestone[]
-  payments       Payment[]
-  supportTickets SupportTicket[]
-  invoices       Invoice[]
+  client                  Client                    @relation(fields: [clientId], references: [id])
+  clientId                String
+  partner                 Partner                   @relation(fields: [partnerId], references: [id])
+  partnerId               String
+  managedBy               Admin                     @relation(fields: [adminId], references: [id])
+  adminId                 String
+  lead                    Lead?                     @relation(fields: [leadId], references: [id])
+  leadId                  String?                   @unique
+  milestones              Milestone[]
+  payments                Payment[]
+  supportTickets          SupportTicket[]
+  invoices                Invoice[]
+  MaintenanceSubscription MaintenanceSubscription[]
 
   @@map("projects")
 }
@@ -187,14 +201,16 @@ model Payment {
   updatedAt   DateTime      @updatedAt
 
   // Relations
-  client      Client     @relation(fields: [clientId], references: [id])
-  clientId    String
-  project     Project    @relation(fields: [projectId], references: [id])
-  projectId   String
-  milestone   Milestone? @relation(fields: [milestoneId], references: [id])
-  milestoneId String?
-  invoice     Invoice?   @relation(fields: [invoiceId], references: [id])
-  invoiceId   String?
+  client                    Client                   @relation(fields: [clientId], references: [id])
+  clientId                  String
+  project                   Project                  @relation(fields: [projectId], references: [id])
+  projectId                 String
+  milestone                 Milestone?               @relation(fields: [milestoneId], references: [id])
+  milestoneId               String?
+  invoice                   Invoice?                 @relation(fields: [invoiceId], references: [id])
+  invoiceId                 String?
+  MaintenanceSubscription   MaintenanceSubscription? @relation(fields: [maintenanceSubscriptionId], references: [id])
+  maintenanceSubscriptionId String?
 
   @@map("payments")
 }
@@ -295,6 +311,51 @@ model Expense {
   adminId String
 
   @@map("expenses")
+}
+
+model MaintenancePlan {
+  id           String       @id @default(cuid())
+  name         String       @unique // e.g., "Basic Maintenance Plan", "Premium Support"
+  description  String?
+  price        Decimal      @db.Decimal(10, 2) // Price per billing cycle
+  billingCycle BillingCycle
+  features     String[] // List of features, e.g., ["24/7 support", "Weekly backups"]
+  isActive     Boolean      @default(true) // Can be deactivated
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  subscriptions MaintenanceSubscription[]
+
+  @@map("maintenance_plans")
+}
+
+model MaintenanceSubscription {
+  id               String             @id @default(cuid())
+  clientId         String
+  planId           String
+  status           SubscriptionStatus @default(ACTIVE)
+  startDate        DateTime
+  endDate          DateTime? // Nullable, if subscription is ongoing
+  nextBillingDate  DateTime
+  lastPaymentDate  DateTime?
+  // Placeholder for payment method reference. In a real system, this would be a customer ID or payment method ID from Stripe/PayPal.
+  // This token would be used by a payment gateway to charge recurring payments.
+  paymentMethodRef String? // e.g., Stripe customer ID, or payment method ID
+  autoRenew        Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  client Client          @relation(fields: [clientId], references: [id])
+  plan   MaintenancePlan @relation(fields: [planId], references: [id])
+
+  // Optional: Link to a specific project if the subscription is project-specific
+  project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
+
+  // Optional: Keep track of payments made for this subscription
+  payments Payment[]
+
+  @@map("maintenance_subscriptions")
 }
 
 // Website Content model
@@ -422,4 +483,17 @@ enum SupportPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUALLY
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAUSED
+  TRIAL // Optional: if you have trial periods
 }

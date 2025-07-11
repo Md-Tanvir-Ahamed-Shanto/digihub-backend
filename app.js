@@ -1,9 +1,11 @@
 const express = require("express");
-const adminRoutes = require("./src/routes/adminRoutes")
-const cookieParser = require("cookie-parser")
-const cors = require("cors")
-const morgan = require("morgan")
-const path = require("path")
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const morgan = require("morgan");
+const path = require("path");
+const adminRoutes = require("./src/routes/adminRoutes");
+const clientRoutes = require("./src/routes/clientRoutes")
+const partnerRoutes = require("./src/routes/partnerRoutes")
 
 const corsOptions = {
   origin: "*",
@@ -19,8 +21,9 @@ app.use(cors(corsOptions));
 app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 //Route
-app.use('/api/admin', adminRoutes);
-
+app.use("/api/admin", adminRoutes);
+app.use("/api/client", clientRoutes);
+app.use("/api/partner", partnerRoutes)
 
 app.use("/", (req, res) => {
   res.send("Server in Running...");

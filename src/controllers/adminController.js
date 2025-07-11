@@ -1,22 +1,114 @@
-const { PrismaClient } = require("../generated/prisma");
+const { PrismaClient } = require('../generated/prisma');
 const prisma = new PrismaClient();
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const config = require("../config");
-const upload = require("../config/multerConfig");
-const fs = require("fs");
-const path = require("path");
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const config = require('../config'); 
+
+
+exports.adminLogin = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const admin = await prisma.admin.findUnique({ where: { email } });
+    if (!admin) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { id: admin.id, email: admin.email, role: 'admin' },
+      config.jwtSecret,
+      { expiresIn: '8h' }
+    );
+    const { password: _, ...adminWithoutPassword } = admin;
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      admin: { ...adminWithoutPassword, role: 'admin' }
+    });
+  } catch (error) {
+    console.error("Admin login error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+exports.getAdminProfile = async (req, res) => {
+  try {
+    const admin = await prisma.admin.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true, email: true, name: true, image: true,
+        createdAt: true, updatedAt: true,
+        _count: {
+          select: {
+            createdPartners: true,
+            processedLeads: true,
+            approvedMilestones: true,
+            managedProjects: true,
+            supportTickets: true,
+            expenses: true,
+            systemSettings: true,
+          }
+        }
+      },
+    });
+    if (!admin) {
+      return res.status(404).json({ message: "Admin profile not found" });
+    }
+    res.status(200).json(admin);
+  } catch (error) {
+    console.error("Get admin profile error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.updateAdminProfile = async (req, res) => {
+  const { name, image, oldPassword, newPassword } = req.body;
+  try {
+    const admin = await prisma.admin.findUnique({ where: { id: req.user.id } });
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (image !== undefined) updateData.image = image;
+
+    if (oldPassword && newPassword) {
+      const isPasswordValid = await bcrypt.compare(oldPassword, admin.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "Old password does not match" });
+      }
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    } else if (newPassword) {
+      return res.status(400).json({ message: "Old password is required to change password" });
+    }
+
+    const updatedAdmin = await prisma.admin.update({
+      where: { id: req.user.id },
+      data: updateData,
+      select: { 
+        id: true, email: true, name: true, image: true,
+        createdAt: true, updatedAt: true,
+      },
+    });
+    res.status(200).json({ message: "Profile updated successfully", admin: updatedAdmin });
+  } catch (error) {
+    console.error("Update admin profile error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 exports.createAdmin = async (req, res) => {
-  const { email, password, name } = req.body;
-  const image = req.file ? `/uploads/profiles/${req.file.filename}` : null;
-
+  const { email, password, name, image } = req.body;
+  if (!email || !password || !name) {
+    return res.status(400).json({ message: "Email, password, and name are required." });
+  }
   try {
-    if (!email || !password) {
-      res.status(400).json({
-        message: "Email & Password are required!",
-      });
-    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newAdmin = await prisma.admin.create({
       data: {
@@ -26,62 +118,40 @@ exports.createAdmin = async (req, res) => {
         image,
       },
     });
-    res.status(201).json(newAdmin);
+    const { password: _, ...adminWithoutPassword } = newAdmin;
+    res.status(201).json({ message: "Admin account created successfully", admin: adminWithoutPassword });
   } catch (error) {
-    console.log("Admin Create Error", error)
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
-    if (error.code === "P2002" && error.meta?.target?.includes("email")) {
+    console.error("Admin creation error:", error);
+    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
       return res.status(409).json({ message: "Email already exists" });
     }
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-exports.adminLogin = async (req, res) => {
-    console.log("calling")
-  const { email, password } = req.body;
-  try {
-    if (!email || !password) {
-      res.status(400).json({
-        message: "Email & Password are required!",
-      });
-    }
-
-    const admin = await prisma.admin.findUnique({ where: { email } });
-    if (!admin) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-    const isPasswordValid = await bcrypt.compare(password, admin.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-    const token = jwt.sign(
-      { id: admin.id, email: admin.email, role: "admin" },
-      config.jwtSecret,
-      { expiresIn: "1d" }
-    );
-    res.status(200).json({
-      token,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        name: admin.name,
-        image: admin.image,
-        role: "admin",
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
 exports.getAllAdmins = async (req, res) => {
   try {
-    const admins = await prisma.admin.findMany();
+    const admins = await prisma.admin.findMany({
+      select: {
+        id: true, email: true, name: true, image: true,
+        createdAt: true, updatedAt: true,
+        _count: {
+          select: {
+            createdPartners: true,
+            processedLeads: true,
+            approvedMilestones: true,
+            managedProjects: true,
+            supportTickets: true,
+            expenses: true,
+            systemSettings: true,
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     res.status(200).json(admins);
   } catch (error) {
+    console.error("Get all admins error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -89,137 +159,83 @@ exports.getAllAdmins = async (req, res) => {
 exports.getAdminById = async (req, res) => {
   const { id } = req.params;
   try {
-    if (!id) {
-      res.status(400).json({
-        message: "Id are required!",
-      });
-    }
     const admin = await prisma.admin.findUnique({
-      where: { id: id },
+      where: { id },
+      include: {
+        createdPartners: { select: { id: true, name: true, email: true } },
+        processedLeads: { select: { id: true, projectCategory: true, status: true } },
+        approvedMilestones: { select: { id: true, title: true, status: true } },
+        managedProjects: { select: { id: true, title: true, status: true } },
+        supportTickets: { select: { id: true, subject: true, status: true } },
+        expenses: { select: { id: true, title: true, amount: true, category: true } },
+        systemSettings: { select: { id: true, key: true, value: true } },
+      },
     });
     if (!admin) {
       return res.status(404).json({ message: "Admin not found" });
     }
     res.status(200).json(admin);
   } catch (error) {
+    console.error("Get admin by ID error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-exports.updateAdmin = async (req, res) => {
+exports.updateAdminById = async (req, res) => {
   const { id } = req.params;
-  const { email, name, password } = req.body;
-  const newImage = req.file
-    ? `/uploads/profiles/${req.file.filename}`
-    : undefined;
-
+  const { email, password, name, image } = req.body;
   try {
-    const admin = await prisma.admin.findUnique({ where: { id } });
-    if (!admin) {
-      if (req.file) {
-        fs.unlinkSync(req.file.path);
-      }
-      return res.status(404).json({ message: "Admin not found" });
-    }
-
-    const updateData = { email, name };
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
-    }
-
-    if (newImage) {
-      if (admin.image) {
-        const oldImagePath = path.join(__dirname, "../../public", admin.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-      }
-      updateData.image = newImage;
-    } else if (req.body.image === null || req.body.image === "") {
-      if (admin.image) {
-        const oldImagePath = path.join(__dirname, "../../public", admin.image);
-        if (fs.existsSync(oldImagePath)) {
-          fs.unlinkSync(oldImagePath);
-        }
-      }
-      updateData.image = null;
-    }
+    const updateData = {};
+    if (email) updateData.email = email;
+    if (password) updateData.password = await bcrypt.hash(password, 10);
+    if (name) updateData.name = name;
+    if (image !== undefined) updateData.image = image;
 
     const updatedAdmin = await prisma.admin.update({
-      where: { id: id },
+      where: { id },
       data: updateData,
+      select: {
+        id: true, email: true, name: true, image: true,
+        createdAt: true, updatedAt: true,
+      },
     });
-    res.status(200).json(updatedAdmin);
+    res.status(200).json({ message: "Admin updated successfully", admin: updatedAdmin });
   } catch (error) {
-    if (req.file && newImage) {
-      fs.unlinkSync(req.file.path);
-    }
-    if (error.code === "P2025") {
+    console.error("Update admin error:", error);
+    if (error.code === 'P2025') {
       return res.status(404).json({ message: "Admin not found" });
     }
-    if (error.code === "P2002" && error.meta?.target?.includes("email")) {
+    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
       return res.status(409).json({ message: "Email already exists" });
     }
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-exports.deleteAdmin = async (req, res) => {
+exports.deleteAdminById = async (req, res) => {
   const { id } = req.params;
   try {
-    const admin = await prisma.admin.findUnique({ where: { id } });
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
+    if (req.user.id === id) {
+        return res.status(403).json({ message: "You cannot delete your own admin account through this endpoint." });
     }
 
-    if (admin.image) {
-      const imagePath = path.join(__dirname, "../../public", admin.image);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
-      }
+    const adminCount = await prisma.admin.count();
+    if (adminCount <= 1) {
+        return res.status(400).json({ message: "Cannot delete the last remaining admin account. Create another admin first if needed." });
     }
 
     await prisma.admin.delete({
-      where: { id: id },
+      where: { id },
     });
-    res.status(204).send();
+    res.status(204).send(); 
   } catch (error) {
-    if (error.code === "P2025") {
+    console.error("Delete admin error:", error);
+    if (error.code === 'P2025') {
       return res.status(404).json({ message: "Admin not found" });
     }
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-
-exports.changeAdminPassword = async (req, res) => {
-  const { id } = req.params;
-  const { oldPassword, newPassword } = req.body;
-
-  try {
-    if (req.user.id !== id) {
-      return res.status(403).json({ message: "Forbidden: You can only change your own password" });
+    if (error.code === 'P2003') { 
+        return res.status(409).json({ message: "Cannot delete admin due to existing related data (e.g., created partners, managed projects, system settings). Please reassign or delete them first." });
     }
-
-    const admin = await prisma.admin.findUnique({ where: { id } });
-    if (!admin || !admin.password) {
-      return res.status(404).json({ message: "admin not found or password not set" });
-    }
-
-    const isPasswordValid = await bcrypt.compare(oldPassword, admin.password);
-    if (!isPasswordValid) {
-      return res.status(400).json({ message: "Old password does not match" });
-    }
-
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    await prisma.admin.update({
-      where: { id },
-      data: { password: hashedNewPassword },
-    });
-
-    res.status(200).json({ message: "Password updated successfully" });
-  } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
 };
