@@ -6,6 +6,7 @@ const path = require("path");
 const adminRoutes = require("./src/routes/adminRoutes");
 const clientRoutes = require("./src/routes/clientRoutes")
 const partnerRoutes = require("./src/routes/partnerRoutes")
+const leadRoutes = require("./src/routes/leadRoutes")
 
 const corsOptions = {
   origin: "*",
@@ -24,6 +25,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 app.use("/api/admin", adminRoutes);
 app.use("/api/client", clientRoutes);
 app.use("/api/partner", partnerRoutes)
+app.use("/api/lead",leadRoutes)
 
 app.use("/", (req, res) => {
   res.send("Server in Running...");

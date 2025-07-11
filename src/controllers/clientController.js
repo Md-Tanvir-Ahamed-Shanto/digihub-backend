@@ -150,8 +150,8 @@ exports.setClientPasswordAndActivate = async (req, res) => {
         if (!client) {
             // Redirect to an error page or send an appropriate response
             const redirectUrl = `${FRONTEND_URL}/set-password-failed?reason=invalid_or_expired`;
-            return res.redirect(redirectUrl); // Use redirect for GET requests, JSON for POST
-            // return res.status(404).json({ message: "Invalid, expired, or already used token." });
+            // return res.redirect(redirectUrl); // Use redirect for GET requests, JSON for POST
+            return res.status(404).json({ message: "Invalid, expired, or already used token." });
         }
 
         // Hash the new password
@@ -171,10 +171,10 @@ exports.setClientPasswordAndActivate = async (req, res) => {
 
         // You might want to redirect them to a success page or the login page
         const redirectUrl = `${FRONTEND_URL}/account-activated?email=${encodeURIComponent(client.email)}`;
-        res.redirect(redirectUrl);
+        // res.redirect(redirectUrl);
 
         // Or if this is an API endpoint (POST/PUT), send JSON response:
-        // res.status(200).json({ message: "Account activated and password set successfully. You can now log in." });
+        res.status(200).json({ message: "Account activated and password set successfully. You can now log in." });
 
     } catch (error) {
         console.error("Client set password and activate error:", error);
