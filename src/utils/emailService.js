@@ -16,6 +16,21 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+exports.sendEmail = async (mailOptions) => {
+    try {
+        // Set default 'from' if not provided in mailOptions
+        mailOptions.from = mailOptions.from || process.env.EMAIL_FROM || '"DGHUB Support" <support@yourdomain.com>';
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`Email sent to ${mailOptions.to}: ${info.messageId}`);
+        return true;
+    } catch (error) {
+        console.error(`Error sending email to ${mailOptions.to}:`, error);
+        throw new Error('Failed to send email. Please check server logs.');
+    }
+};
+
+
 /**
  * Sends a generic verification email (e.g., for direct client registration).
  * @param {string} toEmail - The recipient's email address.

@@ -8,6 +8,20 @@ router.post('/login', partnerController.partnerLogin);
 router.post('/register', partnerController.registerPartner);
 router.post('/set-password', partnerController.setPartnerPasswordAndActivate);
 
+router.get('/leads',
+    authMiddleware.authenticate,
+    roleMiddleware.isPartner,
+    partnerController.getPartnerAssignedLeads
+);
+
+// Route for a partner to submit their offer for a specific lead to the admin
+// Requires authentication and partner role
+router.post('/leads/:leadId/submit-offer',
+    authMiddleware.authenticate,
+    roleMiddleware.isPartner,
+    partnerController.submitOfferToAdmin
+);
+
 router.get('/profile', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.getPartnerProfile);
 router.put('/profile', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.updatePartnerProfile);
 router.post('/withdrawals/request', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.requestWithdrawal);
@@ -18,5 +32,6 @@ router.get('/', authMiddleware.authenticate, roleMiddleware.isAdmin, partnerCont
 router.get('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, partnerController.getPartnerByIdForAdmin);
 router.put('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, partnerController.updatePartnerByAdmin);
 router.delete('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, partnerController.deletePartnerByAdmin);
+
 
 module.exports = router;

@@ -10,6 +10,7 @@ router.post('/set-password', clientController.setClientPasswordAndActivate);
 
 router.get('/profile', authMiddleware.authenticate, roleMiddleware.isClient, clientController.getClientProfile);
 router.put('/profile', authMiddleware.authenticate, roleMiddleware.isClient, clientController.updateClientProfile);
+router.get('/my-leads', authMiddleware.authenticate, roleMiddleware.isClient, clientController.getClientLeads);
 
 router.get('/', authMiddleware.authenticate, roleMiddleware.isAdmin, clientController.getAllClientsForAdmin);
 router.get('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, clientController.getClientByIdForAdmin);

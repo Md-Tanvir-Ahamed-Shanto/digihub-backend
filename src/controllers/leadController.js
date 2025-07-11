@@ -8,9 +8,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const DEFAULT_GST_RATE = parseFloat(process.env.GST_RATE || '0.18');
 
 exports.submitLead = async (req, res) => {
-    const { name, email, phone, companyName, projectCategory, porjectTitle, description, keyFeatures, budgetRange, timeline } = req.body;
+    const { name, email, phone, companyName, projectCategory, projectTitle, description, keyFeatures, budgetRange, timeline } = req.body;
 
-    if (!name || !email || !phone || !projectCategory || !porjectTitle || !description || !budgetRange) {
+    if (!name || !email || !phone || !projectCategory || !projectTitle || !description || !budgetRange) {
         return res.status(400).json({ message: "Name, email, phone, project category, project title, description, and budget range are required." });
     }
 
@@ -67,7 +67,7 @@ exports.submitLead = async (req, res) => {
                 phone,
                 companyName,
                 projectCategory,
-                porjectTitle,
+                projectTitle,
                 description,
                 keyFeatures,
                 budgetRange,
@@ -276,244 +276,6 @@ exports.assignPartnerToLead = async (req, res) => {
     }
 };
 
-exports.setOfferPriceAndSend = async (req, res) => {
-    try {
-        const adminId = req.user.id;
-        if (!adminId) {
-            return res.status(403).json({ message: 'Access denied. Admin authentication required.' });
-        }
-
-        const { id } = req.params;
-        const { partnerCost, adminMarginPercentage, includesGST = false, notes } = req.body;
-
-        if (partnerCost === undefined || adminMarginPercentage === undefined) {
-            return res.status(400).json({ success: false, message: 'Partner cost and Admin margin percentage are required.' });
-        }
-        if (isNaN(parseFloat(partnerCost)) || isNaN(parseFloat(adminMarginPercentage))) {
-            return res.status(400).json({ success: false, message: 'Partner cost and Admin margin percentage must be numbers.' });
-        }
-
-        const lead = await prisma.lead.findUnique({
-            where: { id },
-            include: { client: true, assignedPartner: true }
-        });
-
-        if (!lead) {
-            return res.status(404).json({ success: false, message: 'Lead not found.' });
-        }
-
-        if (lead.status !== 'ASSIGNED_TO_PARTNER' && lead.status !== 'PENDING_OFFER_REVIEW') {
-            return res.status(400).json({ success: false, message: `Offer can only be set for leads with status 'ASSIGNED_TO_PARTNER' or 'PENDING_OFFER_REVIEW'. Current status: ${lead.status}` });
-        }
-
-        if (!lead.assignedPartnerId) {
-            return res.status(400).json({ success: false, message: 'Cannot set offer. A partner must be assigned to this lead first.' });
-        }
-
-        const pCost = new Decimal(partnerCost);
-        const adminMarginDecimal = pCost.times(new Decimal(adminMarginPercentage).dividedBy(100));
-        let offerPrice = pCost.plus(adminMarginDecimal);
-        let gstAmount = new Decimal(0);
-
-        if (includesGST) {
-            gstAmount = offerPrice.times(new Decimal(DEFAULT_GST_RATE));
-            offerPrice = offerPrice.plus(gstAmount);
-        }
-
-        const updatedLead = await prisma.lead.update({
-            where: { id },
-            data: {
-                offerPrice: offerPrice.toDecimalPlaces(2),
-                partnerCost: pCost.toDecimalPlaces(2),
-                adminMargin: adminMarginDecimal.toDecimalPlaces(2),
-                includesGST: includesGST,
-                notes: notes || lead.notes,
-                status: 'OFFER_SENT_TO_CLIENT',
-                processedById: adminId,
-            },
-            include: { client: true, assignedPartner: true }
-        });
-
-        if (updatedLead.client && updatedLead.client.email) {
-            const clientOfferLink = `${FRONTEND_URL}/client/lead-offer/${updatedLead.id}`;
-            await emailService.sendProjectOfferToClient(
-                updatedLead.client.email,
-                updatedLead.client.name,
-                updatedLead.porjectTitle,
-                updatedLead.offerPrice.toFixed(2),
-                clientOfferLink,
-                updatedLead.notes
-            );
-        }
-
-        res.status(200).json({ success: true, message: 'Offer set and sent to client successfully.', data: updatedLead });
-    } catch (error) {
-        console.error('Error setting offer price and sending:', error);
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
-    }
-};
-
-exports.clientAcceptOffer = async (req, res) => {
-    try {
-        const clientId = req.user.id;
-        if (!clientId) {
-            return res.status(403).json({ success: false, message: 'Access denied. Client authentication required.' });
-        }
-
-        const { id } = req.params;
-
-        const lead = await prisma.lead.findUnique({
-            where: { id },
-            include: { client: true, assignedPartner: true, processedBy: true }
-        });
-
-        if (!lead) {
-            return res.status(404).json({ success: false, message: 'Lead not found.' });
-        }
-
-        if (lead.clientId !== clientId) {
-            return res.status(403).json({ success: false, message: 'Access denied. You are not the client for this lead.' });
-        }
-
-        if (lead.status !== 'OFFER_SENT_TO_CLIENT') {
-            return res.status(400).json({ success: false, message: `Offer cannot be accepted. Current lead status is "${lead.status}".` });
-        }
-
-        if (!lead.offerPrice || !lead.partnerCost || !lead.adminMargin || !lead.assignedPartnerId || !lead.processedById) {
-            return res.status(400).json({ success: false, message: 'Offer details or assigned partner/admin missing for this lead. Please contact support.' });
-        }
-
-        const result = await prisma.$transaction(async (prisma) => {
-            const newProject = await prisma.project.create({
-                data: {
-                    title: lead.porjectTitle,
-                    description: lead.description,
-                    projectCategory: lead.projectCategory,
-                    budget: lead.budgetRange,
-                    timeline: lead.timeline,
-                    offerPrice: lead.offerPrice,
-                    partnerCost: lead.partnerCost,
-                    adminMargin: lead.adminMargin,
-                    includesGST: lead.includesGST,
-                    clientId: lead.clientId,
-                    partnerId: lead.assignedPartnerId,
-                    leadId: lead.id,
-                    createdByAdminId: lead.processedById,
-                    status: 'IN_PROGRESS',
-                    acceptedAt: new Date(),
-                }
-            });
-
-            const updatedLead = await prisma.lead.update({
-                where: { id: lead.id },
-                data: {
-                    status: 'ACCEPTED_AND_CONVERTED',
-                    projectId: newProject.id,
-                }
-            });
-
-            if (lead.client && lead.client.email) {
-                await emailService.sendProjectAcceptedConfirmation(
-                    lead.client.email,
-                    lead.client.name,
-                    newProject.title
-                );
-            }
-            if (lead.assignedPartner && lead.assignedPartner.email) {
-                await emailService.sendPartnerSetPasswordEmail(
-                    lead.assignedPartner.email,
-                    `${FRONTEND_URL}/partner/projects/${newProject.id}`,
-                    lead.assignedPartner.name
-                );
-            }
-            if (lead.processedBy && lead.processedBy.email) {
-                await emailService.sendVerificationEmail(
-                    lead.processedBy.email,
-                    `${FRONTEND_URL}/admin/projects/${newProject.id}`,
-                    lead.processedBy.name
-                );
-            }
-
-            return { newProject, updatedLead };
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Offer accepted and project created successfully!',
-            project: result.newProject
-        });
-
-    } catch (error) {
-        console.error('Error accepting offer and converting to project:', error);
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
-    }
-};
-
-exports.clientRejectOffer = async (req, res) => {
-    try {
-        const clientId = req.user.id;
-        if (!clientId) {
-            return res.status(403).json({ success: false, message: 'Access denied. Client authentication required.' });
-        }
-
-        const { id } = req.params;
-
-        const lead = await prisma.lead.findUnique({
-            where: { id },
-            include: { client: true, assignedPartner: true, processedBy: true }
-        });
-
-        if (!lead) {
-            return res.status(404).json({ success: false, message: 'Lead not found.' });
-        }
-
-        if (lead.clientId !== clientId) {
-            return res.status(403).json({ success: false, message: 'Access denied. You are not the client for this lead.' });
-        }
-
-        if (lead.status !== 'OFFER_SENT_TO_CLIENT') {
-            return res.status(400).json({ success: false, message: `Offer cannot be rejected. Current lead status is "${lead.status}".` });
-        }
-
-        const updatedLead = await prisma.lead.update({
-            where: { id: lead.id },
-            data: {
-                status: 'OFFER_REJECTED_BY_CLIENT',
-            },
-            include: { client: true, assignedPartner: true, processedBy: true }
-        });
-
-        if (updatedLead.client && updatedLead.client.email) {
-            await emailService.sendProjectRejectedNotification(
-                updatedLead.client.email,
-                updatedLead.client.name,
-                updatedLead.porjectTitle
-            );
-        }
-
-        if (updatedLead.processedBy && updatedLead.processedBy.email) {
-            await emailService.sendVerificationEmail(
-                updatedLead.processedBy.email,
-                `${FRONTEND_URL}/admin/leads/${updatedLead.id}`,
-                updatedLead.processedBy.name
-            );
-        }
-        if (updatedLead.assignedPartner && updatedLead.assignedPartner.email) {
-            await emailService.sendPartnerSetPasswordEmail(
-                updatedLead.assignedPartner.email,
-                `${FRONTEND_URL}/partner/leads/${updatedLead.id}`,
-                updatedLead.assignedPartner.name
-            );
-        }
-
-        res.status(200).json({ success: true, message: 'Offer rejected successfully.', data: updatedLead });
-
-    } catch (error) {
-        console.error('Error rejecting offer:', error);
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
-    }
-};
-
 exports.updateLeadStatus = async (req, res) => {
     try {
         const adminId = req.user.id;
@@ -557,7 +319,7 @@ exports.updateLeadStatus = async (req, res) => {
 
 exports.updateLeadByAdmin = async (req, res) => {
     const { id } = req.params;
-    const { name, email, phone, companyName, projectCategory, porjectTitle, description, keyFeatures, budgetRange, timeline, status, assignedPartnerId } = req.body;
+    const { name, email, phone, companyName, projectCategory, projectTitle, description, keyFeatures, budgetRange, timeline, status, assignedPartnerId } = req.body;
 
     try {
         if (!req.user.id) {
@@ -570,7 +332,7 @@ exports.updateLeadByAdmin = async (req, res) => {
         if (phone) updateData.phone = phone;
         if (companyName !== undefined) updateData.companyName = companyName;
         if (projectCategory) updateData.projectCategory = projectCategory;
-        if (porjectTitle) updateData.porjectTitle = porjectTitle;
+        if (projectTitle) updateData.projectTitle = projectTitle;
         if (description) updateData.description = description;
         if (keyFeatures !== undefined) updateData.keyFeatures = keyFeatures;
         if (budgetRange) updateData.budgetRange = budgetRange;
@@ -637,5 +399,363 @@ exports.deleteLeadByAdmin = async (req, res) => {
             return res.status(409).json({ message: "Cannot delete lead due to existing related data (e.g., foreign key constraint). Consider soft deleting or manually removing relationships." });
         }
         res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+
+
+
+// --- Admin Finalizes and Sends Offer to Client ---
+exports.sendOfferToClient = async (req, res) => {
+    const { leadId } = req.params;
+    const { adminMargin, includesGST, timeline, notes } = req.body; // Input from Admin
+
+    try {
+        const adminId = req.user.id; // From authMiddleware (assuming admin role)
+
+        if (!adminId) {
+            return res.status(401).json({ success: false, message: "Authentication required." });
+        }
+
+        if (typeof adminMargin === 'undefined' || adminMargin === null) {
+            return res.status(400).json({ success: false, message: "Admin margin is required." });
+        }
+        const numericAdminMargin = new Decimal(adminMargin);
+        if (numericAdminMargin.lessThan(0)) {
+            return res.status(400).json({ success: false, message: "Admin margin cannot be negative." });
+        }
+        if (!timeline) {
+            return res.status(400).json({ success: false, message: "Timeline is required!" });
+        }
+        const lead = await prisma.lead.findUnique({
+            where: { id: leadId },
+            select: {
+                status: true,
+                partnerProposedCost: true,
+                client: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                },
+                projectTitle: true, // Still using 'projectTitle' as per your schema
+                budgetRange: true
+            }
+        });
+
+        if (!lead) {
+            return res.status(404).json({ success: false, message: "Lead not found." });
+        }
+
+        // Allow if partner has proposed an offer or it's just assigned
+        if (!['ASSIGNED_TO_PARTNER', 'PARTNER_OFFER_PROPOSED'].includes(lead.status)) {
+            return res.status(400).json({ success: false, message: `Cannot send offer for lead with status: ${lead.status}. Lead must have a partner offer proposed or be assigned.` });
+        }
+
+        if (lead.partnerProposedCost === null) {
+            return res.status(400).json({ success: false, message: "Partner's proposed cost is missing. Cannot finalize client offer." });
+        }
+
+        const basePrice = lead.partnerProposedCost.plus(numericAdminMargin);
+        let finalClientOffer = basePrice;
+        const gstRate = new Decimal(DEFAULT_GST_RATE);
+
+        if (includesGST) {
+            finalClientOffer = basePrice.times(Decimal.add(1, gstRate));
+        }
+
+        const updatedLead = await prisma.lead.update({
+            where: { id: leadId },
+            data: {
+                adminMargin: numericAdminMargin,
+                includesGST: includesGST,
+                // FIX: Changed clientOfferPrice to offerPrice as per your schema
+                offerPrice: finalClientOffer,
+                timeline,
+                notes, // Pass notes from req.body to the lead
+                adminOfferPreparedAt: new Date(),
+                status: 'OFFER_SENT_TO_CLIENT',
+                processedById: adminId // Record which admin sent the offer
+            },
+            select: {
+                id: true,
+                projectTitle: true, // Still using 'projectTitle' as per your schema
+                // FIX: Changed clientOfferPrice to offerPrice as per your schema
+                offerPrice: true,
+                includesGST: true,
+                status: true,
+                client: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        console.log("updatedLead", updatedLead);
+
+        // --- Send Offer Email to Client ---
+        if (updatedLead.client && updatedLead.client.email) {
+            const offerLink = `${FRONTEND_URL}/client/offers/${updatedLead.id}`; // Assuming client can view offer details here
+            await emailService.sendProjectOfferToClient(
+                updatedLead.client.email,
+                updatedLead.client.name,
+                updatedLead.projectTitle, // Still using 'projectTitle' as per your schema
+                // FIX: Changed clientOfferPrice to offerPrice for email formatting
+                updatedLead.offerPrice.toFixed(2),
+                offerLink,
+                'We have carefully reviewed your project requirements and designed an offer that best fits your needs.'
+            );
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Offer for Lead ${leadId} finalized and sent to client successfully.`,
+            data: updatedLead
+        });
+
+    } catch (error) {
+        console.error("Error sending offer to client:", error);
+        res.status(500).json({ success: false, message: "Internal server error.", error: error.message });
+    }
+};
+
+// --- Client Accepts Offer ---
+exports.clientAcceptOffer = async (req, res) => {
+    try {
+        const clientId = req.user.id;
+        if (!clientId) {
+            return res.status(403).json({ success: false, message: 'Access denied. Client authentication required.' });
+        }
+
+        const { id } = req.params; // leadId
+        // console.log("id", id); // Removed console.log for final code
+
+        // Fetch lead with all necessary details for project creation and email notifications
+        const lead = await prisma.lead.findUnique({
+            where: { id },
+            include: {
+                client: true,
+                assignedPartner: true,
+                processedBy: true // The admin who processed this lead
+            }
+        });
+
+        // console.log("lead ", lead); // Removed console.log for final code
+        if (!lead) {
+            return res.status(404).json({ success: false, message: 'Lead not found.' });
+        }
+
+        // Authorization check: Ensure the authenticated client owns this lead
+        if (lead.clientId !== clientId) {
+            return res.status(403).json({ success: false, message: 'Access denied. You are not the client for this lead.' });
+        }
+
+        // Business logic validation: Only allow acceptance if status is 'OFFER_SENT_TO_CLIENT'
+        if (lead.status !== 'OFFER_SENT_TO_CLIENT') {
+            return res.status(400).json({ success: false, message: `Offer cannot be accepted. Current lead status is "${lead.status}".` });
+        }
+
+        // Validate that all necessary offer details and assignments exist before creating project
+        // Note: partnerCost should be set during 'OFFER_SENT_TO_CLIENT' status.
+        if (
+            lead.offerPrice === null || // Ensure offerPrice is not null
+            lead.partnerProposedCost === null || // ⭐ Corrected: Check for partnerCost being null
+            lead.adminMargin === null || // Ensure adminMargin is not null
+            !lead.assignedPartnerId ||
+            !lead.processedById ||
+            !lead.description ||
+            !lead.projectCategory ||
+            !lead.timeline
+        ) {
+            return res.status(400).json({ success: false, message: 'Missing offer details or required lead information for project creation. Please contact support.' });
+        }
+
+        let newProject; // Declare newProject outside the transaction scope
+
+        const transactionResult = await prisma.$transaction(async (tx) => {
+            // Create the new project
+            newProject = await tx.project.create({
+                data: {
+                    title: lead.projectTitle, // ⭐ Fixed: Using porjectTitle to match schema
+                    description: lead.description,
+                    projectCategory: lead.projectCategory,
+                    budget: lead.budgetRange, // Assuming budgetRange from lead maps to budget in project
+                    timeline: lead.timeline,
+                    offerPrice: lead.offerPrice,
+                    partnerCost: lead.partnerProposedCost, // This should now be populated
+                    adminMargin: lead.adminMargin,
+                    includesGST: lead.includesGST,
+                    clientId: lead.clientId,
+                    partnerId: lead.assignedPartnerId,
+                    leadId: lead.id,
+                    createdByAdminId: lead.processedById, // This maps to the admin who sent the offer
+                    status: 'ACTIVE', // Initial project status (user's change retained)
+                    acceptedAt: new Date(),
+                }
+            });
+
+            // Update the lead status and link to the new project
+            const updatedLead = await tx.lead.update({
+                where: { id: lead.id },
+                data: {
+                    status: 'ACCEPTED_AND_CONVERTED',
+                    projectId: newProject.id, // Link the lead to the new project
+                },
+            });
+
+            // Return necessary data from the transaction to be used outside
+            return { newProject, updatedLead };
+        });
+
+        // ⭐⭐⭐ All email sending moved OUTSIDE the transaction ⭐⭐⭐
+        // These will execute only if the database operations above successfully committed.
+
+        // Send Project Accepted Confirmation Email to Client
+        if (lead.client && lead.client.email) {
+            await emailService.sendProjectAcceptedConfirmation(
+                lead.client.email,
+                lead.client.name,
+                transactionResult.newProject.title // Use title from the newly created project
+            );
+        }
+
+        const projects = {
+            ...transactionResult.newProject,
+            partnerCost: null,
+            adminMargin: null,
+        }
+
+        // Notify Assigned Partner about the new project
+        if (lead.assignedPartner && lead.assignedPartner.email) {
+            await emailService.sendEmail({ // Using generic sendEmail for custom content
+                to: lead.assignedPartner.email,
+                subject: `New Project Alert: Offer Accepted for "${transactionResult.newProject.title}"`,
+                html: `
+                    <p>Dear ${lead.assignedPartner.name},</p>
+                    <p>Great news! The client has accepted the offer for project <strong>"${transactionResult.newProject.title}"</strong> (Lead ID: ${lead.id}).</p>
+                    <p>The project is now active and in 'ACTIVE' status.</p>
+                    <p>View Project: <a href="${FRONTEND_URL}/partner/projects/${transactionResult.newProject.id}">Link to Project</a></p>
+                    <p>Regards,</p>
+                    <p>DGHUB System</p>
+                `
+            });
+        }
+
+        // Notify Admin about the accepted offer and new project
+        if (lead.processedBy && lead.processedBy.email) {
+            await emailService.sendEmail({ // Using generic sendEmail for custom content
+                to: lead.processedBy.email,
+                subject: `Offer Accepted & Project Created for Lead: "${transactionResult.newProject.title}"`,
+                html: `
+                    <p>Dear ${lead.processedBy.name},</p>
+                    <p>The offer you sent for project <strong>"${transactionResult.newProject.title}"</strong> (Lead ID: ${lead.id}) has been accepted by the client <strong>${lead.client.name}</strong>.</p>
+                    <p>A new project (ID: ${transactionResult.newProject.id}) has been successfully created and linked to this lead.</p>
+                    <p>View Project: <a href="${FRONTEND_URL}/admin/projects/${transactionResult.newProject.id}">Link to Project</a></p>
+                    <p>Regards,</p>
+                    <p>DGHUB System</p>
+                `
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Offer accepted and project created successfully!',
+            project: projects // Send the created project details in the response
+        });
+
+    } catch (error) {
+        console.error('Error accepting offer and converting to project:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
+
+// Updated exports.clientRejectsOffer
+exports.clientRejectsOffer = async (req, res) => {
+    try {
+        const clientId = req.user.id;
+        if (!clientId) {
+            return res.status(403).json({ success: false, message: 'Access denied. Client authentication required.' });
+        }
+
+        const { id } = req.params; // leadId
+        const { rejectionReason } = req.body; // Optional: Client can provide a reason
+
+        const lead = await prisma.lead.findUnique({
+            where: { id },
+            include: { client: true, assignedPartner: true, processedBy: true }
+        });
+
+        if (!lead) {
+            return res.status(404).json({ success: false, message: 'Lead not found.' });
+        }
+
+        if (lead.clientId !== clientId) {
+            return res.status(403).json({ success: false, message: 'Access denied. You are not the client for this lead.' });
+        }
+
+        if (lead.status !== 'OFFER_SENT_TO_CLIENT') {
+            return res.status(400).json({ success: false, message: `Offer cannot be rejected. Current lead status is "${lead.status}".` });
+        }
+
+        const updatedLead = await prisma.lead.update({
+            where: { id: lead.id },
+            data: {
+                status: 'OFFER_REJECTED_BY_CLIENT',
+                rejectionReason: rejectionReason || null, // Assuming you add this field to your Lead schema
+            },
+            include: { client: true, assignedPartner: true, processedBy: true } // Include relations for email notifications
+        });
+
+        // Send Rejection Confirmation Email to Client
+        if (updatedLead.client && updatedLead.client.email) {
+            await emailService.sendProjectRejectedNotification(
+                updatedLead.client.email,
+                updatedLead.client.name,
+                updatedLead.projectTitle // Corrected typo
+            );
+        }
+
+        // Notify Admin that client rejected the offer
+        if (updatedLead.processedBy && updatedLead.processedBy.email) {
+            await emailService.sendEmail({ // Using generic sendEmail for custom content
+                to: updatedLead.processedBy.email,
+                subject: `Offer Rejected by Client for Lead: "${updatedLead.projectTitle}"`,
+                html: `
+                    <p>Dear ${updatedLead.processedBy.name},</p>
+                    <p>The client <strong>${updatedLead.client.name}</strong> has rejected the offer for project <strong>"${updatedLead.projectTitle}"</strong> (Lead ID: ${updatedLead.id}).</p>
+                    ${rejectionReason ? `<p><strong>Reason:</strong> ${rejectionReason}</p>` : ''}
+                    <p>View Lead: <a href="${FRONTEND_URL}/admin/leads/${updatedLead.id}">Link to Lead</a></p>
+                    <p>Regards,</p>
+                    <p>DGHUB System</p>
+                `
+            });
+        }
+
+        // Notify Assigned Partner that client rejected the offer
+        if (updatedLead.assignedPartner && updatedLead.assignedPartner.email) {
+            await emailService.sendEmail({ // Using generic sendEmail for custom content
+                to: updatedLead.assignedPartner.email,
+                subject: `Offer Rejected by Client for Lead: "${updatedLead.projectTitle}"`,
+                html: `
+                    <p>Dear ${updatedLead.assignedPartner.name},</p>
+                    <p>The client has rejected the offer for lead <strong>"${updatedLead.projectTitle}"</strong> (Lead ID: ${updatedLead.id}).</p>
+                    ${rejectionReason ? `<p><strong>Client's Reason:</strong> ${rejectionReason}</p>` : ''}
+                    <p>View Lead: <a href="${FRONTEND_URL}/partner/leads/${updatedLead.id}">Link to Lead</a></p>
+                    <p>Regards,</p>
+                    <p>DGHUB System</p>
+                `
+            });
+        }
+
+        res.status(200).json({ success: true, message: 'Offer rejected successfully.', data: updatedLead });
+
+    } catch (error) {
+        console.error('Error rejecting offer:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 };

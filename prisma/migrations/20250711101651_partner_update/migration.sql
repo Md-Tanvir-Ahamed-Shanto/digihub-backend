@@ -2,7 +2,7 @@
   Warnings:
 
   - A unique constraint covering the columns `[verificationToken]` on the table `partners` will be added. If there are existing duplicate values, this will fail.
-  - Added the required column `porjectTitle` to the `leads` table without a default value. This is not possible if the table is not empty.
+  - Added the required column `projectTitle` to the `leads` table without a default value. This is not possible if the table is not empty.
 
 */
 -- AlterTable
@@ -11,7 +11,7 @@ ALTER TABLE "clients" ADD COLUMN     "phone" TEXT;
 -- AlterTable
 ALTER TABLE "leads" ADD COLUMN     "keyFeatures" TEXT,
 ADD COLUMN     "phone" TEXT,
-ADD COLUMN     "porjectTitle" TEXT NOT NULL,
+ADD COLUMN     "projectTitle" TEXT NOT NULL,
 ADD COLUMN     "timeline" TEXT;
 
 -- AlterTable

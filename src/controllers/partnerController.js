@@ -454,3 +454,162 @@ exports.deletePartnerByAdmin = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// --- Get Partner's Own Assigned Leads ---
+exports.getPartnerAssignedLeads = async (req, res) => {
+    try {
+        const partnerId = req.user.id; // From authMiddleware
+
+        const assignedLeads = await prisma.lead.findMany({
+            where: {
+                assignedPartnerId: partnerId,
+                status: {
+                    in: [
+                        'ASSIGNED_TO_PARTNER',
+                        'PARTNER_OFFER_PROPOSED',
+                        'OFFER_SENT_TO_CLIENT'
+                    ]
+                }
+            },
+            select: {
+                id: true,
+                projectTitle: true, // Check for typo: 'projectTitle' is usually preferred
+                projectCategory: true,
+                description: true,
+                status: true,
+                budgetRange: true,
+                timeline: true,
+                partnerProposedCost: true,
+                partnerNotes: true,
+                partnerOfferProposedAt: true,
+                client: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true
+                    }
+                },
+                createdAt: true,
+                updatedAt: true,
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        res.status(200).json({ success: true, data: assignedLeads });
+    } catch (error) {
+        console.error("Error fetching partner's assigned leads:", error);
+        res.status(500).json({ success: false, message: "Internal server error.", error: error.message });
+    }
+};
+
+// --- Partner Sends Offer to Admin ---
+exports.submitOfferToAdmin = async (req, res) => {
+    const { leadId } = req.params;
+    const { proposedCost,timeline, notes } = req.body;
+
+    try {
+        const partnerId = req.user.id;
+        const partnerName = req.user.name || 'A Partner'; // Get partner name from req.user
+
+        if (!partnerId) {
+            return res.status(401).json({ success: false, message: "Authentication required." });
+        }
+        if(!timeline){
+              return res.status(400).json({ success: false, message: "timeline is required." });
+        }
+
+        if (typeof proposedCost === 'undefined' || proposedCost === null) {
+            return res.status(400).json({ success: false, message: "Proposed cost is required." });
+        }
+        const numericProposedCost = new Decimal(proposedCost);
+        if (numericProposedCost.lessThanOrEqualTo(0)) {
+            return res.status(400).json({ success: false, message: "Proposed cost must be a positive number." });
+        }
+
+        const lead = await prisma.lead.findUnique({
+            where: { id: leadId },
+            select: {
+                assignedPartnerId: true,
+                status: true,
+                projectTitle: true
+            }
+        });
+
+        if (!lead) {
+            return res.status(404).json({ success: false, message: "Lead not found." });
+        }
+
+        if (lead.assignedPartnerId !== partnerId) {
+            return res.status(403).json({ success: false, message: "You are not assigned to this lead." });
+        }
+
+        if (['OFFER_SENT_TO_CLIENT', 'OFFER_REJECTED_BY_CLIENT', 'OFFER_ACCEPTED_BY_CLIENT', 'ACCEPTED_AND_CONVERTED'].includes(lead.status)) {
+            return res.status(400).json({ success: false, message: `Cannot submit offer for lead with current status: ${lead.status}.` });
+        }
+
+        const updatedLead = await prisma.lead.update({
+            where: { id: leadId },
+            data: {
+                partnerProposedCost: numericProposedCost,
+                partnerNotes: notes || null,
+                timeline: timeline || null,
+                partnerOfferProposedAt: new Date(),
+                status: 'PARTNER_OFFER_PROPOSED',
+            },
+            select: {
+                id: true,
+                projectTitle: true,
+                partnerProposedCost: true,
+                partnerNotes: true,
+                timeline: true,
+                status: true
+            }
+        });
+
+        // --- Notify Admins ---
+        const admins = await prisma.admin.findMany({
+            select: {
+                email: true,
+                name: true
+            }
+        });
+
+        for (const admin of admins) {
+            if (admin.email) {
+                await emailService.sendEmail({ // Using a generic sendEmail for custom content
+                    to: admin.email,
+                    subject: `New Offer Proposal for Lead: "${updatedLead.projectTitle}" by ${partnerName}`,
+                    html: `
+                        <p>Dear ${admin.name},</p>
+                        <p>A partner has submitted an offer proposal for a lead:</p>
+                        <ul>
+                            <li><strong>Lead ID:</strong> ${updatedLead.id}</li>
+                            <li><strong>Project Title:</strong> ${updatedLead.projectTitle}</li>
+                            <li><strong>Partner Name:</strong> ${partnerName}</li>
+                            <li><strong>Proposed Cost:</strong> $${updatedLead.partnerProposedCost.toFixed(2)}</li>
+                            <li><strong>Proposed Timeline:</strong> $${updatedLead.timeline}</li>
+                            <li><strong>Partner Notes:</strong> ${updatedLead.partnerNotes || 'N/A'}</li>
+                        </ul>
+                        <p>Please review the offer and proceed with preparing the client's final offer.</p>
+                        <p>You can view the lead details here: <a href="${FRONTEND_URL}/admin/leads/${updatedLead.id}">View Lead</a></p>
+                        <p>Best regards,</p>
+                        <p>The DGHUB Team</p>
+                    `
+                });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Offer for Lead ${leadId} submitted to admin successfully.`,
+            data: updatedLead
+        });
+
+    } catch (error) {
+        console.error("Error submitting partner offer to admin:", error);
+        res.status(500).json({ success: false, message: "Internal server error.", error: error.message });
+    }
+};

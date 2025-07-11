@@ -88,7 +88,7 @@ model Lead {
   phone           String
   companyName     String?
   projectCategory String
-  porjectTitle    String
+  projectTitle    String
   description     String
   keyFeatures     String[]
   budgetRange     String
@@ -107,12 +107,18 @@ model Lead {
   projectId         String?  @unique // This field is the foreign key in Lead
   project           Project? @relation("LeadToProject", fields: [projectId], references: [id]) // <--- Kept definition here, renamed relation
 
+// Offer details from Partner
+  partnerProposedCost     Decimal?    @db.Decimal(10, 2)
+  partnerNotes            String?     // Notes from the partner on their offer
+  partnerOfferProposedAt  DateTime?
+  adminOfferPreparedAt     DateTime?
   // New fields for offer details on the Lead
   offerPrice  Decimal?
   partnerCost Decimal?
   adminMargin Decimal?
   includesGST Boolean? @default(false)
   notes       String?
+  
 
   @@map("leads")
 }
@@ -384,7 +390,8 @@ enum LeadStatus {
   OFFER_SENT_TO_CLIENT
   OFFER_REJECTED_BY_CLIENT
   ACCEPTED_AND_CONVERTED
-
+  PARTNER_OFFER_PROPOSED
+  OFFER_ACCEPTED_BY_CLIENT 
 }
 
 enum ProjectStatus {

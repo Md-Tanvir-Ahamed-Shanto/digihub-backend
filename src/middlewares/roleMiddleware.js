@@ -7,7 +7,7 @@ exports.authorizeRoles = (...allowedRoles) => {
     }
 
     const { role } = req.user;
-
+console.log("role", role,allowedRoles)
     if (!allowedRoles.includes(role)) {
       return res
         .status(403)

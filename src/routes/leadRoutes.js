@@ -31,13 +31,6 @@ router.put(
   leadController.assignPartnerToLead
 );
 
-// Admin sets the offer price for a lead and sends the offer to the client
-router.put(
-  "/:id/set-offer",
-  authMiddleware.authenticate,
-  roleMiddleware.isAdmin,
-  leadController.setOfferPriceAndSend
-);
 
 // Admin manually updates a lead's general information (excluding offer details handled separately)
 // This includes basic updates like name, description, etc., and potentially status.
@@ -65,21 +58,24 @@ router.delete(
 );
 
 // --- Client Routes ---
-
-// Client accepts a project offer (this auto-converts the lead to a project)
-router.post(
-  "/:id/accept-offer", // Use ':id' if this is the lead ID
-  authMiddleware.authenticate,
-  roleMiddleware.isClient,
-  leadController.clientAcceptOffer // Corrected function name
+router.post('/:leadId/send-offer-to-client',
+    authMiddleware.authenticate,
+    roleMiddleware.isAdmin,
+    leadController.sendOfferToClient
 );
 
-// Client rejects a project offer
-router.post(
-  "/:id/reject-offer", // Use ':id' if this is the lead ID
-  authMiddleware.authenticate,
-  roleMiddleware.isClient,
-  leadController.clientRejectOffer // Corrected function name
+// --- Client-facing Lead/Offer Routes ---
+router.post('/:id/accept-offer',
+    authMiddleware.authenticate,
+    roleMiddleware.isClient,
+    leadController.clientAcceptOffer
 );
+
+router.post('/:leadId/reject-offer',
+    authMiddleware.authenticate,
+    roleMiddleware.isClient,
+    leadController.clientRejectsOffer
+);
+
 
 module.exports = router;

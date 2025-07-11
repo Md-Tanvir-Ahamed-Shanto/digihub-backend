@@ -380,3 +380,85 @@ exports.deleteClientByAdmin = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+
+exports.getClientLeads = async (req, res) => {
+    try {
+        const clientId = req.user.id; // Get the authenticated client's ID from the request
+
+        // 1. Authentication Check
+        if (!clientId) {
+            return res.status(403).json({ success: false, message: 'Access denied. Client authentication required.' });
+        }
+
+        // 2. Fetch Leads for the specific client
+        const clientLeads = await prisma.lead.findMany({
+            where: {
+                clientId: clientId,
+            },
+             select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                companyName: true,
+                projectCategory: true,
+                projectTitle: true, // Assuming this is correct as per your schema
+                description: true,
+                keyFeatures: true,
+                budgetRange: true,
+                timeline: true,       // The client should typically see the offer timeline
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+                includesGST:true,
+
+                // Client-facing offer details:
+                offerPrice: true,     
+                includesGST: true,
+                adminOfferPreparedAt: true,
+
+               
+             
+                processedBy: { 
+                    select: {
+                        id: true,
+                        name: true,
+                       
+                    },
+                },
+                
+                project: { 
+                    select: {
+                        id: true,
+                        title: true,
+                        status: true,
+                        offerPrice: true, 
+                    },
+                },
+            },
+        
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+        // 4. Respond with the leads
+        if (clientLeads.length > 0) {
+            return res.status(200).json({
+                success: true,
+                message: 'Client leads fetched successfully.',
+                data: clientLeads,
+            });
+        } else {
+            return res.status(200).json({
+                success: true,
+                message: 'No leads found for this client.',
+                data: [], // Return an empty array if no leads are found
+            });
+        }
+
+    } catch (error) {
+        console.error('Error fetching client leads:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    }
+};
