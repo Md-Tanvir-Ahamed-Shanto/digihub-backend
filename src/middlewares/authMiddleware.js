@@ -1,18 +1,24 @@
-const jwt = require("jsonwebtoken");
-const config = require("../config");
+const jwt = require('jsonwebtoken');
+const config = require('../config'); // Where your jwtSecret is stored
 
 exports.authenticate = (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-  if (token == null) {
-    return res.status(401).json({ message: "Authentication token required" });
-  }
+    const token = req.headers.authorization?.split(' ')[1];
 
-  jwt.verify(token, config.jwtSecret, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: "Invalid or expired token" });
+    if (!token) {
+        return res.status(401).json({ message: 'No token provided, authorization denied' });
     }
-    req.user = user;
-    next();
-  });
+
+    try {
+        const decoded = jwt.verify(token, config.jwtSecret);
+        // This is the key part: how req.user (or req.adminId) is populated
+        req.user = decoded; // Standard practice: attaches { id, email, role }
+        // If you want req.adminId directly, you could do:
+        // if (decoded.role === 'admin') {
+        //     req.adminId = decoded.id;
+        // }
+        next();
+    } catch (err) {
+        console.error('JWT verification failed:', err); // Log the actual error for debugging
+        return res.status(401).json({ message: 'Invalid or expired token.' });
+    }
 };

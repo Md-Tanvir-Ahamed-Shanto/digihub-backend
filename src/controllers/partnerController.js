@@ -372,7 +372,7 @@ exports.getPartnerByIdForAdmin = async (req, res) => {
                 milestones: { select: { id: true, title: true, status: true }, orderBy: { createdAt: 'desc' } },
                 withdrawals: { orderBy: { requestedAt: 'desc' } },
                 supportTickets: { select: { id: true, subject: true, status: true }, orderBy: { createdAt: 'desc' } },
-                Lead: { select: { id: true, projectCategory: true, status: true }, orderBy: { createdAt: 'desc' } },
+                 assignedLeads: { select: { id: true, projectCategory: true, status: true }, orderBy: { createdAt: 'desc' } },
             },
         });
         if (!partner) {

@@ -8,21 +8,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Admin model
 model Admin {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  image     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Admin actions
+  id                 String          @id @default(cuid())
+  email              String          @unique
+  password           String
+  name               String
+  image              String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
   createdPartners    Partner[]
-  processedLeads     Lead[]
+  processedLeads     Lead[]          @relation("AdminProcessedLeads")
   approvedMilestones Milestone[]
-  managedProjects    Project[]
+  managedProjects    Project[]       @relation(name: "AdminCreatedProjects")
   supportTickets     SupportTicket[]
   expenses           Expense[]
   systemSettings     SystemSetting[]
@@ -30,177 +27,165 @@ model Admin {
   @@map("admins")
 }
 
-// Partner model
 model Partner {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  password          String?   // Keep as optional initially
-  name              String
-  skillSet          String[]
-  industryExp       String[]
-  country           String?
-  region            String?
-  profilePhoto      String?
-  hourlyRate        Decimal?
-  portfolioLink     String?
-  isActive          Boolean   @default(false) // Default to false, activated upon password setup
-  rating            Decimal?  @default(0)
-  totalEarnings     Decimal   @default(0)
-  availableBalance  Decimal   @default(0)
-  // New fields for email verification/password setup
-  verificationToken String?   @unique
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  password            String?
+  name                String
+  skillSet            String[]
+  industryExp         String[]
+  country             String?
+  region              String?
+  profilePhoto        String?
+  hourlyRate          Decimal?
+  portfolioLink       String?
+  isActive            Boolean         @default(false)
+  rating              Decimal?        @default(0)
+  totalEarnings       Decimal         @default(0)
+  availableBalance    Decimal         @default(0)
+  verificationToken   String?         @unique
   verificationExpires DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  // Relations
-  createdBy         Admin     @relation(fields: [createdById], references: [id])
-  createdById       String
-  assignedProjects  Project[]
-  milestones        Milestone[]
-  withdrawals       Withdrawal[]
-  supportTickets    SupportTicket[]
-  Lead              Lead[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  createdBy           Admin           @relation(fields: [createdById], references: [id])
+  createdById         String
+  assignedProjects    Project[]       @relation(name: "AssignedProjects")
+  milestones          Milestone[]
+  withdrawals         Withdrawal[]
+  supportTickets      SupportTicket[]
+  assignedLeads       Lead[]          @relation(name: "AssignedLeads")
 
   @@map("partners")
 }
 
-// Client model
 model Client {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  password    String?
-  phone       String?
-  companyName String?
-  isActive          Boolean                   @default(false) // Changed: Set to false initially, activated upon email verification
-  isEmailVerified   Boolean                   @default(false) // Set to true after email verification
-  // Add token fields directly to Client model for direct signup flow
-  verificationToken String?                   @unique
-  verificationExpires DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  leads                   Lead[]
-  projects                Project[]
-  payments                Payment[]
-  supportTickets          SupportTicket[]
-  invoices                Invoice[]
-  MaintenanceSubscription MaintenanceSubscription[]
+  id                       String                    @id @default(cuid())
+  name                     String
+  email                    String                    @unique
+  password                 String?
+  phone                    String?
+  companyName              String?
+  isActive                 Boolean                   @default(false)
+  isEmailVerified          Boolean                   @default(false)
+  verificationToken        String?                   @unique
+  verificationExpires      DateTime?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  leads                    Lead[]
+  projects                 Project[]
+  payments                 Payment[]
+  supportTickets           SupportTicket[]
+  invoices                 Invoice[]
+  maintenanceSubscriptions MaintenanceSubscription[]
 
   @@map("clients")
 }
 
-// Lead model (from quote submissions)
 model Lead {
   id              String     @id @default(cuid())
   name            String
   email           String
-  phone           String?
+  phone           String
   companyName     String?
   projectCategory String
   porjectTitle    String
   description     String
-  keyFeatures     String?
+  keyFeatures     String[]
   budgetRange     String
   timeline        String?
   status          LeadStatus @default(PENDING)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  // Relations
-  client          Client?  @relation(fields: [clientId], references: [id])
-  clientId        String?
-  assignedPartner Partner? @relation(fields: [partnerId], references: [id])
-  partnerId       String?
-  processedBy     Admin?   @relation(fields: [adminId], references: [id])
-  adminId         String?
-  project         Project? // One-to-one when lead converts to project
+  // Relationships
+  clientId          String?
+  client            Client?  @relation(fields: [clientId], references: [id])
+  assignedPartnerId String?
+  assignedPartner   Partner? @relation(name: "AssignedLeads", fields: [assignedPartnerId], references: [id])
+  processedById     String?
+  processedBy       Admin?   @relation(name: "AdminProcessedLeads", fields: [processedById], references: [id])
+  projectId         String?  @unique // This field is the foreign key in Lead
+  project           Project? @relation("LeadToProject", fields: [projectId], references: [id]) // <--- Kept definition here, renamed relation
+
+  // New fields for offer details on the Lead
+  offerPrice  Decimal?
+  partnerCost Decimal?
+  adminMargin Decimal?
+  includesGST Boolean? @default(false)
+  notes       String?
 
   @@map("leads")
 }
 
-// Project model
 model Project {
-  id              String        @id @default(cuid())
-  title           String
-  description     String
-  category        String
-  status          ProjectStatus @default(PENDING)
-  totalCost       Decimal
-  partnerCost     Decimal
-  adminMargin     Decimal
-  gstAmount       Decimal       @default(0)
-  gstEnabled      Boolean       @default(false)
-  timeline        Int // in days
-  startDate       DateTime?
-  endDate         DateTime?
-  completedAt     DateTime?
-  maintenanceMode Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // Relations
-  client                  Client                    @relation(fields: [clientId], references: [id])
-  clientId                String
-  partner                 Partner                   @relation(fields: [partnerId], references: [id])
-  partnerId               String
-  managedBy               Admin                     @relation(fields: [adminId], references: [id])
-  adminId                 String
-  lead                    Lead?                     @relation(fields: [leadId], references: [id])
-  leadId                  String?                   @unique
-  milestones              Milestone[]
-  payments                Payment[]
-  supportTickets          SupportTicket[]
-  invoices                Invoice[]
-  MaintenanceSubscription MaintenanceSubscription[]
+  id                       String                    @id @default(cuid())
+  title                    String
+  description              String?
+  projectCategory          String?
+  budget                   String?
+  timeline                 String?
+  status                   ProjectStatus             @default(PENDING_CLIENT_ACCEPTANCE)
+  offerPrice               Decimal
+  partnerCost              Decimal
+  adminMargin              Decimal
+  includesGST              Boolean                   @default(false)
+  acceptedAt               DateTime?
+  rejectedAt               DateTime?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  clientId                 String
+  client                   Client                    @relation(fields: [clientId], references: [id])
+  partnerId                String
+  partner                  Partner                   @relation(name: "AssignedProjects", fields: [partnerId], references: [id])
+  leadId                   String?                   @unique // This field is the foreign key in Project
+  lead                     Lead?                     @relation("LeadToProject") // <--- Removed fields/references here, added relation name
+  createdByAdminId         String?
+  createdByAdmin           Admin?                    @relation(name: "AdminCreatedProjects", fields: [createdByAdminId], references: [id])
+  milestones               Milestone[]
+  payments                 Payment[]
+  maintenanceSubscriptions MaintenanceSubscription[]
+  invoices                 Invoice[]
+  supportTickets           SupportTicket[]
 
   @@map("projects")
 }
 
-// Milestone model
 model Milestone {
   id          String          @id @default(cuid())
   title       String
   description String?
   cost        Decimal
-  duration    Int // in days
+  duration    Int
   status      MilestoneStatus @default(PENDING)
-  order       Int // sequence order
+  order       Int
   dueDate     DateTime?
   completedAt DateTime?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-
-  // Relations
-  project    Project   @relation(fields: [projectId], references: [id])
-  projectId  String
-  partner    Partner   @relation(fields: [partnerId], references: [id])
-  partnerId  String
-  approvedBy Admin?    @relation(fields: [adminId], references: [id])
-  adminId    String?
-  payments   Payment[]
-  invoices   Invoice[]
+  project     Project         @relation(fields: [projectId], references: [id])
+  projectId   String
+  partner     Partner         @relation(fields: [partnerId], references: [id])
+  partnerId   String
+  approvedBy  Admin?          @relation(fields: [adminId], references: [id])
+  adminId     String?
+  payments    Payment[]
+  invoices    Invoice[]
 
   @@map("milestones")
 }
 
-// Payment model
 model Payment {
-  id          String        @id @default(cuid())
-  amount      Decimal
-  gstAmount   Decimal       @default(0)
-  totalAmount Decimal
-  method      PaymentMethod
-  status      PaymentStatus @default(PENDING)
-  stripeId    String?
-  paypalId    String?
-  paidAt      DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  // Relations
+  id                        String                   @id @default(cuid())
+  amount                    Decimal
+  gstAmount                 Decimal                  @default(0)
+  totalAmount               Decimal
+  method                    PaymentMethod
+  status                    PaymentStatus            @default(PENDING)
+  stripeId                  String?
+  paypalId                  String?
+  paidAt                    DateTime?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
   client                    Client                   @relation(fields: [clientId], references: [id])
   clientId                  String
   project                   Project                  @relation(fields: [projectId], references: [id])
@@ -209,13 +194,12 @@ model Payment {
   milestoneId               String?
   invoice                   Invoice?                 @relation(fields: [invoiceId], references: [id])
   invoiceId                 String?
-  MaintenanceSubscription   MaintenanceSubscription? @relation(fields: [maintenanceSubscriptionId], references: [id])
+  maintenanceSubscription   MaintenanceSubscription? @relation(fields: [maintenanceSubscriptionId], references: [id])
   maintenanceSubscriptionId String?
 
   @@map("payments")
 }
 
-// Invoice model
 model Invoice {
   id            String        @id @default(cuid())
   invoiceNumber String        @unique
@@ -228,20 +212,17 @@ model Invoice {
   paidAt        DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-
-  // Relations
-  client      Client     @relation(fields: [clientId], references: [id])
-  clientId    String
-  project     Project    @relation(fields: [projectId], references: [id])
-  projectId   String
-  milestone   Milestone? @relation(fields: [milestoneId], references: [id])
-  milestoneId String?
-  payments    Payment[]
+  client        Client        @relation(fields: [clientId], references: [id])
+  clientId      String
+  project       Project       @relation(fields: [projectId], references: [id])
+  projectId     String
+  milestone     Milestone?    @relation(fields: [milestoneId], references: [id])
+  milestoneId   String?
+  payments      Payment[]
 
   @@map("invoices")
 }
 
-// Withdrawal model for partners
 model Withdrawal {
   id          String           @id @default(cuid())
   amount      Decimal
@@ -249,25 +230,20 @@ model Withdrawal {
   requestedAt DateTime         @default(now())
   processedAt DateTime?
   note        String?
-
-  // Relations
-  partner   Partner @relation(fields: [partnerId], references: [id])
-  partnerId String
+  partner     Partner          @relation(fields: [partnerId], references: [id])
+  partnerId   String
 
   @@map("withdrawals")
 }
 
-// Support Ticket model
 model SupportTicket {
-  id        String          @id @default(cuid())
-  subject   String
-  message   String
-  status    SupportStatus   @default(OPEN)
-  priority  SupportPriority @default(MEDIUM)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-
-  // Relations
+  id         String            @id @default(cuid())
+  subject    String
+  message    String
+  status     SupportStatus     @default(OPEN)
+  priority   SupportPriority   @default(MEDIUM)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
   client     Client            @relation(fields: [clientId], references: [id])
   clientId   String
   project    Project?          @relation(fields: [projectId], references: [id])
@@ -281,21 +257,17 @@ model SupportTicket {
   @@map("support_tickets")
 }
 
-// Support Response model
 model SupportResponse {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   message   String
-  isAdmin   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  // Relations
-  ticket   SupportTicket @relation(fields: [ticketId], references: [id])
-  ticketId String
+  isAdmin   Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
+  ticketId  String
 
   @@map("support_responses")
 }
 
-// Expense model for admin
 model Expense {
   id          String   @id @default(cuid())
   title       String
@@ -305,25 +277,22 @@ model Expense {
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Relations
-  admin   Admin  @relation(fields: [adminId], references: [id])
-  adminId String
+  admin       Admin    @relation(fields: [adminId], references: [id])
+  adminId     String
 
   @@map("expenses")
 }
 
 model MaintenancePlan {
-  id           String       @id @default(cuid())
-  name         String       @unique // e.g., "Basic Maintenance Plan", "Premium Support"
-  description  String?
-  price        Decimal      @db.Decimal(10, 2) // Price per billing cycle
-  billingCycle BillingCycle
-  features     String[] // List of features, e.g., ["24/7 support", "Weekly backups"]
-  isActive     Boolean      @default(true) // Can be deactivated
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
+  id            String                    @id @default(cuid())
+  name          String                    @unique
+  description   String?
+  price         Decimal                   @db.Decimal(10, 2)
+  billingCycle  BillingCycle
+  features      String[]
+  isActive      Boolean                   @default(true)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
   subscriptions MaintenanceSubscription[]
 
   @@map("maintenance_plans")
@@ -335,35 +304,27 @@ model MaintenanceSubscription {
   planId           String
   status           SubscriptionStatus @default(ACTIVE)
   startDate        DateTime
-  endDate          DateTime? // Nullable, if subscription is ongoing
+  endDate          DateTime?
   nextBillingDate  DateTime
   lastPaymentDate  DateTime?
-  // Placeholder for payment method reference. In a real system, this would be a customer ID or payment method ID from Stripe/PayPal.
-  // This token would be used by a payment gateway to charge recurring payments.
-  paymentMethodRef String? // e.g., Stripe customer ID, or payment method ID
+  paymentMethodRef String?
   autoRenew        Boolean            @default(true)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
-
-  client Client          @relation(fields: [clientId], references: [id])
-  plan   MaintenancePlan @relation(fields: [planId], references: [id])
-
-  // Optional: Link to a specific project if the subscription is project-specific
-  project   Project? @relation(fields: [projectId], references: [id])
-  projectId String?
-
-  // Optional: Keep track of payments made for this subscription
-  payments Payment[]
+  client           Client             @relation(fields: [clientId], references: [id])
+  plan             MaintenancePlan    @relation(fields: [planId], references: [id])
+  project          Project?           @relation(fields: [projectId], references: [id])
+  projectId        String?
+  payments         Payment[]
 
   @@map("maintenance_subscriptions")
 }
 
-// Website Content model
 model WebsiteContent {
   id        String   @id @default(cuid())
-  page      String // home, about, contact, etc.
-  section   String // hero, features, testimonials, etc.
-  content   Json // flexible content blocks
+  page      String
+  section   String
+  content   Json
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -372,12 +333,11 @@ model WebsiteContent {
   @@map("website_contents")
 }
 
-// Dynamic Pages model
 model DynamicPage {
   id        String   @id @default(cuid())
   title     String
   slug      String   @unique
-  content   Json // content blocks
+  content   Json
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -385,7 +345,6 @@ model DynamicPage {
   @@map("dynamic_pages")
 }
 
-// Contact Submissions model
 model ContactSubmission {
   id        String   @id @default(cuid())
   name      String
@@ -399,38 +358,42 @@ model ContactSubmission {
   @@map("contact_submissions")
 }
 
-// System Settings model
 model SystemSetting {
   id        String   @id @default(cuid())
   key       String   @unique
   value     String
-  type      String // text, boolean, number, json
+  type      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relations
-  admin   Admin  @relation(fields: [adminId], references: [id])
-  adminId String
+  admin     Admin    @relation(fields: [adminId], references: [id])
+  adminId   String
 
   @@map("system_settings")
 }
 
-// Enums
 enum LeadStatus {
   PENDING
-  ASSIGNED
-  QUOTED
+  OFFER_SENT
   ACCEPTED
   REJECTED
   CONVERTED
+  ARCHIVED
+  REVIEWING
+  ASSIGNED_TO_PARTNER
+  PENDING_OFFER_REVIEW
+  OFFER_SENT_TO_CLIENT
+  OFFER_REJECTED_BY_CLIENT
+  ACCEPTED_AND_CONVERTED
+
 }
 
 enum ProjectStatus {
-  PENDING
+  PENDING_CLIENT_ACCEPTANCE
   ACTIVE
   COMPLETED
   CANCELLED
   ON_HOLD
+  REJECTED_BY_CLIENT
 }
 
 enum MilestoneStatus {
@@ -495,5 +458,5 @@ enum SubscriptionStatus {
   CANCELLED
   EXPIRED
   PAUSED
-  TRIAL // Optional: if you have trial periods
+  TRIAL
 }
