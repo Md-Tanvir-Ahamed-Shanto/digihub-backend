@@ -7,6 +7,8 @@ const adminRoutes = require("./src/routes/adminRoutes");
 const clientRoutes = require("./src/routes/clientRoutes")
 const partnerRoutes = require("./src/routes/partnerRoutes")
 const leadRoutes = require("./src/routes/leadRoutes")
+const milestoneRoutes = require("./src/routes/milestoneRoutes")
+const projectRoutes = require("./src/routes/projectRoutes")
 
 const corsOptions = {
   origin: "*",
@@ -26,6 +28,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/client", clientRoutes);
 app.use("/api/partner", partnerRoutes)
 app.use("/api/lead",leadRoutes)
+app.use("/api/project", projectRoutes)
+app.use("/api/milestone", milestoneRoutes)
 
 app.use("/", (req, res) => {
   res.send("Server in Running...");

@@ -1,28 +1,71 @@
-// src/routes/milestoneRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const milestoneController = require('../controllers/milestoneController');
-const authMiddleware = require('../middlewares/authMiddleware');
-const roleMiddleware = require('../middlewares/roleMiddleware');
+const milestoneController = require("../controllers/milestoneController"); // Adjust path
+const authMiddleware = require("../middlewares/authMiddleware");
+const roleMiddleware = require("../middlewares/roleMiddleware");
 
-// --- Admin-Specific Milestone Routes ---
-// Admins have full CRUD control over milestones
-router.post('/', authMiddleware.authenticate, roleMiddleware.isAdmin, milestoneController.createMilestoneByAdmin);
-router.get('/', authMiddleware.authenticate, roleMiddleware.isAdmin, milestoneController.getAllMilestonesForAdmin);
-router.get('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, milestoneController.getMilestoneByIdForAdmin);
-router.put('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, milestoneController.updateMilestoneByAdmin); // General update
-router.put('/:id/approve', authMiddleware.authenticate, roleMiddleware.isAdmin, milestoneController.approveMilestoneByAdmin); // Specific action for approval
-router.delete('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, milestoneController.deleteMilestoneByAdmin);
+// -------------------- Partner Routes --------------------
+// Partner creates milestones for a project
+router.post(
+  "/partner/projects/:projectId/milestones",
+  authMiddleware.authenticate,
+  roleMiddleware.isPartner,
+  milestoneController.createMilestones
+);
+// Partner views their project's milestones
+router.get(
+  "/partner/projects/:projectId/milestones",
+  authMiddleware.authenticate,
+  roleMiddleware.isPartner,
+  milestoneController.getPartnerMilestonesByProject
+);
+// Partner updates a specific milestone (e.g., to correct details before admin review)
+router.put(
+  "/partner/milestones/:milestoneId",
+  authMiddleware.authenticate,
+  roleMiddleware.isPartner,
+  milestoneController.updatePartnerMilestone
+);
 
-// --- Partner-Specific Milestone Routes ---
-// Partners can view milestones assigned to their projects and update status
-router.get('/partner', authMiddleware.authenticate, roleMiddleware.isPartner, milestoneController.getPartnerMilestones);
-router.get('/partner/:id', authMiddleware.authenticate, roleMiddleware.isPartner, milestoneController.getPartnerMilestoneById);
-router.put('/partner/:id/status', authMiddleware.authenticate, roleMiddleware.isPartner, milestoneController.updateMilestoneStatusByPartner);
+// -------------------- Admin Routes --------------------
+// Admin views all milestones for a project
+router.get(
+  "/admin/projects/:projectId/milestones",
+  authMiddleware.authenticate,
+  roleMiddleware.isAdmin,
+  milestoneController.getAdminMilestonesByProject
+);
+// Admin approves a milestone
+router.put(
+  "/admin/milestones/:milestoneId/approve",
+  authMiddleware.authenticate,
+  roleMiddleware.isAdmin,
+  milestoneController.approveMilestone
+);
+// Admin rejects a milestone
+router.put(
+  "/admin/milestones/:milestoneId/reject",
+  authMiddleware.authenticate,
+  roleMiddleware.isAdmin,
+  milestoneController.rejectMilestone
+);
 
-// --- Client-Specific Milestone Routes ---
-// Clients can view milestones related to their projects
-router.get('/client', authMiddleware.authenticate, roleMiddleware.isClient, milestoneController.getClientMilestones);
-router.get('/client/:id', authMiddleware.authenticate, roleMiddleware.isClient, milestoneController.getClientMilestoneById);
+// -------------------- Client Routes --------------------
+// Client views their project's milestones (only approved/active ones)
+router.get(
+  "/client/projects/:projectId/milestones",
+  authMiddleware.authenticate,
+  roleMiddleware.isClient,
+  milestoneController.getClientMilestonesByProject
+);
+
+// -------------------- Common Routes (for specific milestone details) --------------------
+// Get details of a single milestone (accessible by relevant Client, Partner, Admin)
+// The controller will handle authorization based on role and project/milestone ownership
+router.get(
+    "/milestones/:milestoneId",
+    authMiddleware.authenticate,
+  milestoneController.getMilestoneDetails
+);
 
 module.exports = router;

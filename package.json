@@ -1,5 +1,5 @@
 {
-  "name": "dghub-backend",
+  "name": "DIGIHUB AUST-backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -10,16 +10,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Md-Tanvir-Ahamed-Shanto/dghub-backend.git"
+    "url": "git+https://github.com/Md-Tanvir-Ahamed-Shanto/DIGIHUB AUST-backend.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/Md-Tanvir-Ahamed-Shanto/dghub-backend/issues"
+    "url": "https://github.com/Md-Tanvir-Ahamed-Shanto/DIGIHUB AUST-backend/issues"
   },
-  "homepage": "https://github.com/Md-Tanvir-Ahamed-Shanto/dghub-backend#readme",
+  "homepage": "https://github.com/Md-Tanvir-Ahamed-Shanto/DIGIHUB AUST-backend#readme",
   "dependencies": {
     "@prisma/client": "^6.11.1",
     "bcryptjs": "^3.0.2",

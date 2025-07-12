@@ -78,7 +78,7 @@ exports.submitLead = async (req, res) => {
         });
 
         res.status(201).json({
-            message: "Project quote submitted successfully! Please check your email to complete your account setup and activate your DGHUB account.",
+            message: "Project quote submitted successfully! Please check your email to complete your account setup and activate your DIGIHUB AUST account.",
             lead: {
                 id: newLead.id,
                 email: newLead.email,
@@ -641,7 +641,7 @@ exports.clientAcceptOffer = async (req, res) => {
                     <p>The project is now active and in 'ACTIVE' status.</p>
                     <p>View Project: <a href="${FRONTEND_URL}/partner/projects/${transactionResult.newProject.id}">Link to Project</a></p>
                     <p>Regards,</p>
-                    <p>DGHUB System</p>
+                    <p>DIGIHUB AUST System</p>
                 `
             });
         }
@@ -657,7 +657,7 @@ exports.clientAcceptOffer = async (req, res) => {
                     <p>A new project (ID: ${transactionResult.newProject.id}) has been successfully created and linked to this lead.</p>
                     <p>View Project: <a href="${FRONTEND_URL}/admin/projects/${transactionResult.newProject.id}">Link to Project</a></p>
                     <p>Regards,</p>
-                    <p>DGHUB System</p>
+                    <p>DIGIHUB AUST System</p>
                 `
             });
         }
@@ -731,7 +731,7 @@ exports.clientRejectsOffer = async (req, res) => {
                     ${rejectionReason ? `<p><strong>Reason:</strong> ${rejectionReason}</p>` : ''}
                     <p>View Lead: <a href="${FRONTEND_URL}/admin/leads/${updatedLead.id}">Link to Lead</a></p>
                     <p>Regards,</p>
-                    <p>DGHUB System</p>
+                    <p>DIGIHUB AUST System</p>
                 `
             });
         }
@@ -747,7 +747,7 @@ exports.clientRejectsOffer = async (req, res) => {
                     ${rejectionReason ? `<p><strong>Client's Reason:</strong> ${rejectionReason}</p>` : ''}
                     <p>View Lead: <a href="${FRONTEND_URL}/partner/leads/${updatedLead.id}">Link to Lead</a></p>
                     <p>Regards,</p>
-                    <p>DGHUB System</p>
+                    <p>DIGIHUB AUST System</p>
                 `
             });
         }

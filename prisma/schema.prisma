@@ -22,7 +22,6 @@ model Admin {
   managedProjects    Project[]       @relation(name: "AdminCreatedProjects")
   supportTickets     SupportTicket[]
   expenses           Expense[]
-  systemSettings     SystemSetting[]
 
   @@map("admins")
 }
@@ -157,25 +156,34 @@ model Project {
 }
 
 model Milestone {
-  id          String          @id @default(cuid())
-  title       String
-  description String?
-  cost        Decimal
-  duration    Int
-  status      MilestoneStatus @default(PENDING)
-  order       Int
-  dueDate     DateTime?
-  completedAt DateTime?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  project     Project         @relation(fields: [projectId], references: [id])
-  projectId   String
-  partner     Partner         @relation(fields: [partnerId], references: [id])
-  partnerId   String
-  approvedBy  Admin?          @relation(fields: [adminId], references: [id])
-  adminId     String?
-  payments    Payment[]
-  invoices    Invoice[]
+  id                      String          @id @default(cuid())
+  title                   String
+  description             String?
+  cost                    Decimal         // Partner's proposed cost
+  duration                Int             // Partner's proposed timeline (e.g., days)
+  status                  MilestoneStatus @default(PENDING)
+  order                   Int             // Order in the project's milestones
+
+  // Fields set by Admin upon approval (ADD THESE IF THEY ARE MISSING):
+  clientCost              Decimal?        // ⭐ New: The cost client pays for this milestone
+  estimatedTimeline       String?         // ⭐ New: Admin's estimated timeline for the client (e.g., '2-4 weeks')
+  additionalNotes         String?         // ⭐ New: Admin's notes for this milestone
+  includesGSTForInvoice   Boolean?        // ⭐ New: Whether GST was applied to THIS milestone's invoice (can differ from project default)
+
+  dueDate                 DateTime?       // This can be set by admin if a hard due date is needed for partner
+  completedAt             DateTime?
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  project                 Project         @relation(fields: [projectId], references: [id])
+  projectId               String
+  partner                 Partner         @relation(fields: [partnerId], references: [id])
+  partnerId               String
+  approvedBy              Admin?          @relation(fields: [adminId], references: [id])
+  adminId                 String?         // Admin who approved/rejected it
+
+  payments                Payment[]
+  invoices                Invoice[]
 
   @@map("milestones")
 }
@@ -326,30 +334,6 @@ model MaintenanceSubscription {
   @@map("maintenance_subscriptions")
 }
 
-model WebsiteContent {
-  id        String   @id @default(cuid())
-  page      String
-  section   String
-  content   Json
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([page, section])
-  @@map("website_contents")
-}
-
-model DynamicPage {
-  id        String   @id @default(cuid())
-  title     String
-  slug      String   @unique
-  content   Json
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("dynamic_pages")
-}
 
 model ContactSubmission {
   id        String   @id @default(cuid())
@@ -362,19 +346,6 @@ model ContactSubmission {
   updatedAt DateTime @updatedAt
 
   @@map("contact_submissions")
-}
-
-model SystemSetting {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     String
-  type      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  admin     Admin    @relation(fields: [adminId], references: [id])
-  adminId   String
-
-  @@map("system_settings")
 }
 
 enum LeadStatus {
@@ -404,11 +375,13 @@ enum ProjectStatus {
 }
 
 enum MilestoneStatus {
-  PENDING
-  APPROVED
-  IN_PROGRESS
-  COMPLETED
-  PAID
+   PENDING        
+  APPROVED       
+  REJECTED     
+  IN_PROGRESS    
+  COMPLETED       
+  PAID          
+  OVERDUE  
 }
 
 enum PaymentMethod {

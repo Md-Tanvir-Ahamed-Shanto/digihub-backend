@@ -596,7 +596,7 @@ exports.submitOfferToAdmin = async (req, res) => {
                         <p>Please review the offer and proceed with preparing the client's final offer.</p>
                         <p>You can view the lead details here: <a href="${FRONTEND_URL}/admin/leads/${updatedLead.id}">View Lead</a></p>
                         <p>Best regards,</p>
-                        <p>The DGHUB Team</p>
+                        <p>The DIGIHUB AUST Team</p>
                     `
                 });
             }
