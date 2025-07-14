@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const emailService = require('../utils/emailService'); // Re-using for set password email
 const config = require('../config');
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080';
 
 // Client Login with Email Verification Check
 exports.clientLogin = async (req, res) => {

@@ -7,7 +7,7 @@ const Decimal = require('decimal.js');
 const crypto = require('crypto'); 
 const emailService = require('../utils/emailService'); 
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'; 
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080'; 
 
 // --- Public Partner Routes (Login / Password Setup) ---
 

@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const emailService = require('../utils/emailService');
 const Decimal = require('decimal.js');
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080';
 const DEFAULT_GST_RATE = parseFloat(process.env.GST_RATE || '0.18');
 
 exports.submitLead = async (req, res) => {

@@ -1,6 +1,6 @@
 const { PrismaClient } = require("../generated/prisma");
 const emailService = require("../utils/emailService"); // Adjust path as needed
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000"; // Make sure this is defined
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8080"; // Make sure this is defined
 const { Decimal } = require("@prisma/client"); // Import Decimal for calculations
 const prisma = new PrismaClient();
 // Helper function to calculate client cost for a milestone
