@@ -348,7 +348,7 @@ exports.getAllPartnersForAdmin = async (req, res) => {
                         milestones: true,
                         withdrawals: true,
                         supportTickets: true,
-                        Lead: true,
+                       
                     }
                 }
             },
