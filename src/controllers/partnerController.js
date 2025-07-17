@@ -341,6 +341,7 @@ exports.getAllPartnersForAdmin = async (req, res) => {
                 country: true, region: true, profilePhoto: true, hourlyRate: true,
                 portfolioLink: true, isActive: true, rating: true, totalEarnings: true,
                 availableBalance: true, createdAt: true, updatedAt: true,
+                withdrawals: true,
                 createdBy: { select: { id: true, name: true } },
                 _count: {
                     select: {

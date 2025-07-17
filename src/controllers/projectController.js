@@ -77,7 +77,8 @@ exports.getAllProjectsForAdmin = async (req, res) => {
             include: {
                 client: { select: { id: true, name: true, email: true } },
                 partner: { select: { id: true, name: true, email: true } },
-                managedBy: { select: { id: true, name: true, email: true } },
+                // managedBy: { select: { id: true, name: true, email: true } },
+                milestones: true,
                 _count: {
                     select: {
                         milestones: true,
@@ -104,7 +105,7 @@ exports.getProjectByIdForAdmin = async (req, res) => {
             include: {
                 client: { select: { id: true, name: true, email: true } },
                 partner: { select: { id: true, name: true, email: true } },
-                managedBy: { select: { id: true, name: true, email: true } },
+                // managedBy: { select: { id: true, name: true, email: true } },
                 lead: { select: { id: true, name: true, email: true, projectCategory: true } },
                 milestones: { orderBy: { order: 'asc' } },
                 payments: { orderBy: { createdAt: 'desc' } },
