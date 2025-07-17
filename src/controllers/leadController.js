@@ -8,9 +8,9 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080';
 const DEFAULT_GST_RATE = parseFloat(process.env.GST_RATE || '0.18');
 
 exports.submitLead = async (req, res) => {
-    const { name, email, phone, companyName, projectCategory, projectTitle, description, keyFeatures, budgetRange, timeline } = req.body;
+    const { name, email, phone, company, projectCategory, projectTitle, description, features, budgetRange, timeline , clientId } = req.body;
 
-    if (!name || !email || !phone || !projectCategory || !projectTitle || !description || !budgetRange) {
+    if (!email || !projectTitle || !description || !budgetRange) {
         return res.status(400).json({ message: "Name, email, phone, project category, project title, description, and budget range are required." });
     }
 
@@ -47,7 +47,7 @@ exports.submitLead = async (req, res) => {
                     name,
                     email,
                     phone,
-                    companyName,
+                    companyName : company,
                     isActive: false,
                     isEmailVerified: false,
                     verificationToken,
@@ -62,17 +62,17 @@ exports.submitLead = async (req, res) => {
 
         const newLead = await prisma.lead.create({
             data: {
-                name,
+                name: name || existingClient.name,
                 email,
-                phone,
-                companyName,
-                projectCategory,
+                phone: phone || existingClient.phone,
+                companyName : company || existingClient.companyName,
+                projectCategory: projectCategory || "N/A",
                 projectTitle,
                 description,
-                keyFeatures,
+                keyFeatures : features || [],
                 budgetRange,
-                timeline,
-                clientId: client.id,
+                timeline:timeline || "N/A",
+                clientId: client.id ||  clientId,
                 status: 'PENDING',
             },
         });

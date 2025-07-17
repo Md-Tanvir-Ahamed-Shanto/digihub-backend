@@ -10,6 +10,9 @@ router.get('/partner', authMiddleware.authenticate, roleMiddleware.isPartner, pr
 router.get('/partner/:id', authMiddleware.authenticate, roleMiddleware.isPartner, projectController.getPartnerProjectById);
 router.put('/partner/:id', authMiddleware.authenticate, roleMiddleware.isPartner, projectController.updateProjectByPartner);
 
+router.get('/client', authMiddleware.authenticate, roleMiddleware.isClient, projectController.getClientProjects);
+router.get('/client/:id', authMiddleware.authenticate, roleMiddleware.isClient, projectController.getClientProjectById);
+
 // --- Admin-Specific Project Routes ---
 router.post('/', authMiddleware.authenticate, roleMiddleware.isAdmin, projectController.createProject);
 router.get('/', authMiddleware.authenticate, roleMiddleware.isAdmin, projectController.getAllProjectsForAdmin);
@@ -19,9 +22,7 @@ router.delete('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, proje
 
 // --- Client-Specific Project Routes ---
 
-router.get('/client', authMiddleware.authenticate, roleMiddleware.isClient, projectController.getClientProjects);
-router.get('/client/:id', authMiddleware.authenticate, roleMiddleware.isClient, projectController.getClientProjectById);
-// Clients can't create/delete projects, only view them
+
 
 
 
