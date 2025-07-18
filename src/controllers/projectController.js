@@ -265,6 +265,26 @@ exports.getClientProjectById = async (req, res) => {
     }
 };
 
+// get client all project by client id 
+exports.getClientAllProjects = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const projects = await prisma.project.findMany({
+            where: { clientId: id }, // Only projects belonging to the logged-in client
+            include: {
+                milestones: { orderBy: { order: 'asc' } },
+                payments: { orderBy: { createdAt: 'desc' } },
+                invoices: { orderBy: { createdAt: 'desc' } }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        res.status(200).json(projects);
+    } catch (error) {
+        console.error("Client: Get projects error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
 
 // --- Partner-specific Project Routes (requires isPartner role) ---
 

@@ -11,7 +11,8 @@ router.get('/partner/:id', authMiddleware.authenticate, roleMiddleware.isPartner
 router.put('/partner/:id', authMiddleware.authenticate, roleMiddleware.isPartner, projectController.updateProjectByPartner);
 
 router.get('/client', authMiddleware.authenticate, roleMiddleware.isClient, projectController.getClientProjects);
-router.get('/client/:id', authMiddleware.authenticate, roleMiddleware.isClient, projectController.getClientProjectById);
+// router.get('/client/:id', authMiddleware.authenticate, roleMiddleware.isClient, projectController.getClientProjectById);
+router.get('/client/:id', authMiddleware.authenticate, projectController.getClientAllProjects);
 
 // --- Admin-Specific Project Routes ---
 router.post('/', authMiddleware.authenticate, roleMiddleware.isAdmin, projectController.createProject);

@@ -41,7 +41,7 @@ exports.createInvoiceByAdmin = async (req, res) => {
                 gstAmount,
                 totalAmount,
                 gstEnabled: gstEnabledBool,
-                status: 'SENT', // Admin usually creates invoices to be sent
+                status: 'PENDING', // Admin usually creates invoices to be sent
                 dueDate: new Date(dueDate),
             },
         });
