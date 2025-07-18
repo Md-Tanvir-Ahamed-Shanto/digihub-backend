@@ -18,5 +18,6 @@ router.get('/', roleMiddleware.isAdmin, adminController.getAllAdmins);
 router.get('/:id', roleMiddleware.isAdmin, adminController.getAdminById);
 router.put('/:id', roleMiddleware.isAdmin, adminController.updateAdminById);
 router.delete('/:id', roleMiddleware.isAdmin, adminController.deleteAdminById);
+router.post("/update-credentials", roleMiddleware.isAdmin, adminController.updateCredentials);
 
 module.exports = router;

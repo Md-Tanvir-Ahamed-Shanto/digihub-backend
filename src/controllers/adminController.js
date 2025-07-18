@@ -239,3 +239,25 @@ exports.deleteAdminById = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+exports.updateCredentials = async (req, res) => { 
+    try {
+      const { email,currentPassword, password } = req.body;
+      const admin = await prisma.admin.findUnique({ where: { id: req.user.id } });
+      if (!admin) {
+        return res.status(404).json({ message: "Admin not found" });
+      }
+      const isPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "Invalid current password" });
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await prisma.admin.update({
+        where: { id: req.user.id },
+        data: { email, password: hashedPassword },
+      });
+      res.status(200).json({ message: "Credentials updated successfully" });
+    } catch (error) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+};
