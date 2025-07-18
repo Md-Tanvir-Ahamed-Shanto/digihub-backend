@@ -1,6 +1,7 @@
-// src/controllers/contactSubmissionController.js
 const { PrismaClient } = require('../generated/prisma');
 const prisma = new PrismaClient();
+const emailService = require('../utils/emailService'); 
+
 
 // --- Public/Guest Contact Submission Route ---
 
@@ -99,3 +100,28 @@ exports.deleteContactSubmissionByAdmin = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+exports.replyToContactSubmission = async (req, res)=>{
+    const { id } = req.params;
+    const { message , email ,subject,  } = req.body;
+    console.log("id", id);
+    try {
+        // send email using emailService and update isReplied
+        await emailService.sendEmail({
+            to: email,
+            subject: "Re: " + subject,
+            text: message,
+        });
+        const updatedSubmission = await prisma.contactSubmission.update({
+            where: { id },
+            data: { isReplied: true },
+        });
+        res.status(200).json({ message: "Contact submission updated successfully", submission: updatedSubmission });
+    } catch (error) {
+        console.error("Admin: Update contact submission error:", error);
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: "Contact submission not found." });
+        }
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
