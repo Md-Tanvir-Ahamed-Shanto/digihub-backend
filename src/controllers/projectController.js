@@ -332,3 +332,25 @@ exports.updateProjectByPartner = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// project mark as a complete as a admin, status change 
+
+exports.markAsComplete = async (req,res)=>{
+    const { id } = req.params;
+    try {
+        const project = await prisma.project.findUnique({ where: { id } });
+        if (!project) {
+            return res.status(404).json({ message: "Project not found " });
+        }
+        const updateData = {};
+        updateData.status = "COMPLETED";
+        const updatedProject = await prisma.project.update({
+            where: { id },
+            data: updateData,
+        });
+        res.status(200).json({ message: "Project updated successfully by admin", project: updatedProject });
+    } catch (error) {
+        console.error("Admin: Update project error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}

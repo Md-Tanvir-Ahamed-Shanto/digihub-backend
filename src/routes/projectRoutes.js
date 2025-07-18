@@ -19,6 +19,7 @@ router.get('/', authMiddleware.authenticate, roleMiddleware.isAdmin, projectCont
 router.get('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, projectController.getProjectByIdForAdmin);
 router.put('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, projectController.updateProjectByAdmin);
 router.delete('/:id', authMiddleware.authenticate, roleMiddleware.isAdmin, projectController.deleteProjectByAdmin);
+router.put('/:id/complete', authMiddleware.authenticate, roleMiddleware.isAdmin, projectController.markAsComplete);
 
 // --- Client-Specific Project Routes ---
 
