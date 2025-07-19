@@ -24,7 +24,7 @@ router.post('/client/issues/:ticketId/reply',authMiddleware.authenticate, client
 // Partner routes  
 router.get('/partner/:partnerId/issues',authMiddleware.authenticate, getPartnerIssues);        // Partner views assigned issues
 router.post('/partner/issues/:ticketId/reply',authMiddleware.authenticate, partnerReplyToIssue); // Partner replies
-router.put('/issues/:id/close',authMiddleware.authenticate, closeIssue);                       // Partner closes issue
+router.put('/partner/issues/:id/close',authMiddleware.authenticate, closeIssue);                       // Partner closes issue
 
 // Admin routes
 router.get('/admin/issues',authMiddleware.authenticate, getAllIssues);              // Admin sees all issues
