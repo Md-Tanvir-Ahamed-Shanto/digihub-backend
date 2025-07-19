@@ -14,6 +14,7 @@ const createIssue = async (req, res) => {
       where: { id: projectId },
       select: { 
         id: true, 
+        title: true,
         partnerId: true 
       }
     });
@@ -24,11 +25,12 @@ const createIssue = async (req, res) => {
 
     // Directly use the partnerId from the found project
     const assignedPartnerId = project.partnerId;
-
+    const projectName = project.title;
     const ticket = await prisma.supportTicket.create({
       data: {
         subject,
         description,
+        projectName,
         priority: priority || 'MEDIUM',
         clientId: clientId, 
         projectId: projectId,
@@ -91,6 +93,11 @@ const clientReplyToIssue = async (req, res) => {
         ticketId
       }
     });
+
+    await prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: { status: 'REPLIED' }
+    });
     
     res.json({ success: true, data: response });
   } catch (error) {
@@ -110,6 +117,10 @@ const partnerReplyToIssue = async (req, res) => {
         userType: 'PARTNER',
         ticketId
       }
+    });
+      await prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: { status: 'REPLIED' }
     });
     
     res.json({ success: true, data: response });
