@@ -75,6 +75,7 @@ model Client {
   payments                 Payment[]
   supportTickets           SupportTicket[]
   invoices                 Invoice[]
+  paymentCards             PaymentCard[]
   maintenanceSubscriptions MaintenanceSubscription[]
 
   @@map("clients")
@@ -106,18 +107,17 @@ model Lead {
   projectId         String?  @unique // This field is the foreign key in Lead
   project           Project? @relation("LeadToProject", fields: [projectId], references: [id]) // <--- Kept definition here, renamed relation
 
-// Offer details from Partner
-  partnerProposedCost     Decimal?    @db.Decimal(10, 2)
-  partnerNotes            String?     // Notes from the partner on their offer
-  partnerOfferProposedAt  DateTime?
-  adminOfferPreparedAt     DateTime?
+  // Offer details from Partner
+  partnerProposedCost    Decimal?  @db.Decimal(10, 2)
+  partnerNotes           String? // Notes from the partner on their offer
+  partnerOfferProposedAt DateTime?
+  adminOfferPreparedAt   DateTime?
   // New fields for offer details on the Lead
-  offerPrice  Decimal?
-  partnerCost Decimal?
-  adminMargin Decimal?
-  includesGST Boolean? @default(false)
-  notes       String?
-  
+  offerPrice             Decimal?
+  partnerCost            Decimal?
+  adminMargin            Decimal?
+  includesGST            Boolean?  @default(false)
+  notes                  String?
 
   @@map("leads")
 }
@@ -156,34 +156,34 @@ model Project {
 }
 
 model Milestone {
-  id                      String          @id @default(cuid())
-  title                   String
-  description             String?
-  cost                    Decimal         // Partner's proposed cost
-  duration                Int             // Partner's proposed timeline (e.g., days)
-  status                  MilestoneStatus @default(PENDING)
-  order                   Int             // Order in the project's milestones
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  cost        Decimal // Partner's proposed cost
+  duration    Int // Partner's proposed timeline (e.g., days)
+  status      MilestoneStatus @default(PENDING)
+  order       Int // Order in the project's milestones
 
   // Fields set by Admin upon approval (ADD THESE IF THEY ARE MISSING):
-  clientCost              Decimal?        // ⭐ New: The cost client pays for this milestone
-  estimatedTimeline       String?         // ⭐ New: Admin's estimated timeline for the client (e.g., '2-4 weeks')
-  additionalNotes         String?         // ⭐ New: Admin's notes for this milestone
-  includesGSTForInvoice   Boolean?        // ⭐ New: Whether GST was applied to THIS milestone's invoice (can differ from project default)
+  clientCost            Decimal? // ⭐ New: The cost client pays for this milestone
+  estimatedTimeline     String? // ⭐ New: Admin's estimated timeline for the client (e.g., '2-4 weeks')
+  additionalNotes       String? // ⭐ New: Admin's notes for this milestone
+  includesGSTForInvoice Boolean? // ⭐ New: Whether GST was applied to THIS milestone's invoice (can differ from project default)
 
-  dueDate                 DateTime?       // This can be set by admin if a hard due date is needed for partner
-  completedAt             DateTime?
-  createdAt               DateTime        @default(now())
-  updatedAt               DateTime        @updatedAt
+  dueDate     DateTime? // This can be set by admin if a hard due date is needed for partner
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  project                 Project         @relation(fields: [projectId], references: [id])
-  projectId               String
-  partner                 Partner         @relation(fields: [partnerId], references: [id])
-  partnerId               String
-  approvedBy              Admin?          @relation(fields: [adminId], references: [id])
-  adminId                 String?         // Admin who approved/rejected it
+  project    Project @relation(fields: [projectId], references: [id])
+  projectId  String
+  partner    Partner @relation(fields: [partnerId], references: [id])
+  partnerId  String
+  approvedBy Admin?  @relation(fields: [adminId], references: [id])
+  adminId    String? // Admin who approved/rejected it
 
-  payments                Payment[]
-  invoices                Invoice[]
+  payments Payment[]
+  invoices Invoice[]
 
   @@map("milestones")
 }
@@ -248,6 +248,18 @@ model Withdrawal {
   partnerId   String
 
   @@map("withdrawals")
+}
+
+model PaymentCard {
+  id         String @id @default(cuid())
+  cardNumber String
+  cardName   String
+  expiryDate String
+  cvv        String
+  clientId   String // Foreign key to link to the Client
+  client     Client @relation(fields: [clientId], references: [id])
+
+  @@map("payment_card")
 }
 
 model SupportTicket {
@@ -334,7 +346,6 @@ model MaintenanceSubscription {
   @@map("maintenance_subscriptions")
 }
 
-
 model ContactSubmission {
   id        String   @id @default(cuid())
   name      String
@@ -362,7 +373,7 @@ enum LeadStatus {
   OFFER_REJECTED_BY_CLIENT
   ACCEPTED_AND_CONVERTED
   PARTNER_OFFER_PROPOSED
-  OFFER_ACCEPTED_BY_CLIENT 
+  OFFER_ACCEPTED_BY_CLIENT
 }
 
 enum ProjectStatus {
@@ -375,13 +386,13 @@ enum ProjectStatus {
 }
 
 enum MilestoneStatus {
-   PENDING        
-  APPROVED       
-  REJECTED     
-  IN_PROGRESS    
-  COMPLETED       
-  PAID          
-  OVERDUE  
+  PENDING
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  PAID
+  OVERDUE
 }
 
 enum PaymentMethod {

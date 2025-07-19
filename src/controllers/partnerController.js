@@ -614,3 +614,25 @@ exports.submitOfferToAdmin = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error.", error: error.message });
     }
 };
+
+exports.updateCredentials = async (req, res) => { 
+    try {
+      const { email,currentPassword, password } = req.body;
+      const partner = await prisma.partner.findUnique({ where: { id: req.user.id } });
+      if (!partner) {
+        return res.status(404).json({ message: "partner not found" });
+      }
+      const isPasswordValid = await bcrypt.compare(currentPassword, partner.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "Invalid current password" });
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await prisma.partner.update({
+        where: { id: req.user.id },
+        data: { email, password: hashedPassword },
+      });
+      res.status(200).json({ message: "Credentials updated successfully" });
+    } catch (error) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+};

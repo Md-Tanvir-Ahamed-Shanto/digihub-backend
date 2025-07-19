@@ -226,6 +226,18 @@ CREATE TABLE "withdrawals" (
 );
 
 -- CreateTable
+CREATE TABLE "payment_card" (
+    "id" TEXT NOT NULL,
+    "cardNumber" TEXT NOT NULL,
+    "cardName" TEXT NOT NULL,
+    "expiryDate" TEXT NOT NULL,
+    "cvv" TEXT NOT NULL,
+    "clientId" TEXT NOT NULL,
+
+    CONSTRAINT "payment_card_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "support_tickets" (
     "id" TEXT NOT NULL,
     "subject" TEXT NOT NULL,
@@ -402,6 +414,9 @@ ALTER TABLE "invoices" ADD CONSTRAINT "invoices_milestoneId_fkey" FOREIGN KEY ("
 
 -- AddForeignKey
 ALTER TABLE "withdrawals" ADD CONSTRAINT "withdrawals_partnerId_fkey" FOREIGN KEY ("partnerId") REFERENCES "partners"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "payment_card" ADD CONSTRAINT "payment_card_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
