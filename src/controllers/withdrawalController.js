@@ -1,22 +1,38 @@
-// src/controllers/withdrawalController.js
 const { PrismaClient } = require('../generated/prisma');
 const prisma = new PrismaClient();
 const Decimal = require('decimal.js');
 
 // --- Partner-specific Withdrawal Routes (Initiated by Partner) ---
-// Note: This endpoint was already provided in partnerController, but can be here for consistency.
-// I'll make it explicit here for the withdrawal model's dedicated file.
 
 exports.requestWithdrawal = async (req, res) => {
-    const { amount, note } = req.body;
+    // Destructure only the fields present in your provided Withdrawal model
+    const {
+        amount,
+        note,
+        type // This is crucial for determining required fields, but specific details won't be stored
+    } = req.body;
+
+    // Validate base fields
     if (!amount || new Decimal(amount).lessThanOrEqualTo(0)) {
         return res.status(400).json({ message: "A valid amount is required for withdrawal." });
     }
+    if (!type) {
+        return res.status(400).json({ message: "Withdrawal method type is required (PAYPAL, BANK_ACCOUNT)." });
+    }
+    // Updated: Only check for the types explicitly allowed in your enum, removed CREDIT_CARD as it's not a typical withdrawal type for partners
+    if (!['PAYPAL', 'BANK_ACCOUNT'].includes(type)) {
+        return res.status(400).json({ message: "Invalid withdrawal method type. Must be PAYPAL or BANK_ACCOUNT." });
+    }
+
+    // Removed: Conditional validation for specific credential fields (paypalEmail, bankName, etc.)
+    // because these fields are NOT in your current Withdrawal model.
+    // If you need to validate these, they should be stored elsewhere or
+    // added back to the Withdrawal model in your schema.prisma.
 
     try {
         const partner = await prisma.partner.findUnique({
             where: { id: req.user.id },
-            select: { availableBalance: true }
+            select: { availableBalance: true } // Ensure this matches your Partner model field name
         });
 
         if (!partner) {
@@ -34,14 +50,15 @@ exports.requestWithdrawal = async (req, res) => {
                 status: 'PENDING',
                 partnerId: req.user.id,
                 note: note || null,
+                type, // Only store the type, not specific credentials
             }
         });
 
-        // Deduct from available balance immediately upon request
+        // Deduct from partner's availableBalance immediately upon request
         await prisma.partner.update({
             where: { id: req.user.id },
             data: {
-                availableBalance: {
+                availableBalance: { // Ensure this matches your Partner model field name
                     decrement: requestedAmount
                 }
             }
@@ -90,7 +107,7 @@ exports.getAllWithdrawalsForAdmin = async (req, res) => {
     try {
         const withdrawals = await prisma.withdrawal.findMany({
             include: {
-                partner: { select: { id: true, name: true, email: true } },
+                partner: { select: { id: true, email: true, contactName: true } },
             },
             orderBy: { requestedAt: 'desc' }
         });
@@ -107,7 +124,7 @@ exports.getWithdrawalByIdForAdmin = async (req, res) => {
         const withdrawal = await prisma.withdrawal.findUnique({
             where: { id },
             include: {
-                partner: { select: { id: true, name: true, email: true } },
+                partner: { select: { id: true, email: true, contactName: true } },
             },
         });
         if (!withdrawal) {
@@ -122,9 +139,9 @@ exports.getWithdrawalByIdForAdmin = async (req, res) => {
 
 exports.processWithdrawalByAdmin = async (req, res) => {
     const { id } = req.params;
-    const { status, note } = req.body; // Status can be APPROVED, PAID, REJECTED
+    const { status, note } = req.body;
 
-    if (!['APPROVED', 'PAID', 'REJECTED'].includes(status)) {
+    if (!['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELED', 'FAILED'].includes(status)) {
         return res.status(400).json({ message: "Invalid withdrawal status provided." });
     }
 
@@ -134,36 +151,35 @@ exports.processWithdrawalByAdmin = async (req, res) => {
             return res.status(404).json({ message: "Withdrawal request not found." });
         }
 
-        // Prevent processing an already paid/rejected request unless specifically allowed
-        if (withdrawal.status === 'PAID' || withdrawal.status === 'REJECTED') {
+        if (['COMPLETED', 'CANCELED', 'FAILED'].includes(withdrawal.status)) {
             return res.status(400).json({ message: `Withdrawal is already ${withdrawal.status}. Cannot process further.` });
         }
 
         const updateData = {
             status,
-            note: note || withdrawal.note, // Allow admin to add/update note
+            note: note !== undefined ? note : withdrawal.note,
             processedAt: new Date(),
         };
 
-        if (status === 'REJECTED') {
-            // If rejected, return the amount to the partner's available balance
-            await prisma.partner.update({
-                where: { id: withdrawal.partnerId },
-                data: {
-                    availableBalance: {
-                        increment: withdrawal.amount
+        if (status === 'CANCELED' || status === 'FAILED') {
+            if (withdrawal.status !== 'COMPLETED') { // Make sure funds were not already paid
+                await prisma.partner.update({
+                    where: { id: withdrawal.partnerId },
+                    data: {
+                        availableBalance: { // Ensure this matches your Partner model field name
+                            increment: withdrawal.amount
+                        }
                     }
-                }
-            });
+                });
+            }
         }
-        // If status is 'PAID', the amount was already decremented on request.
 
         const updatedWithdrawal = await prisma.withdrawal.update({
             where: { id },
             data: updateData,
         });
 
-        res.status(200).json({ message: `Withdrawal request ${status.toLowerCase()} successfully.`, withdrawal: updatedWithdrawal });
+        res.status(200).json({ message: `Withdrawal request status updated to ${status.toLowerCase()}.`, withdrawal: updatedWithdrawal });
     } catch (error) {
         console.error("Admin: Process withdrawal error:", error);
         if (error.code === 'P2025') {
@@ -181,22 +197,19 @@ exports.deleteWithdrawalByAdmin = async (req, res) => {
             return res.status(404).json({ message: "Withdrawal not found." });
         }
 
-        // If a withdrawal was PENDING or APPROVED and is now being deleted by admin,
-        // you might want to return the amount to the partner's balance.
-        // If it was already PAID, deleting it won't revert the payment.
-        if (withdrawal.status === 'PENDING' || withdrawal.status === 'APPROVED') {
-             await prisma.partner.update({
+        if (withdrawal.status === 'PENDING' || withdrawal.status === 'PROCESSING') {
+            await prisma.partner.update({
                 where: { id: withdrawal.partnerId },
                 data: {
-                    availableBalance: {
+                    availableBalance: { // Ensure this matches your Partner model field name
                         increment: withdrawal.amount
                     }
                 }
-             });
+            });
         }
 
         await prisma.withdrawal.delete({ where: { id } });
-        res.status(204).send();
+        res.status(204).send(); // No content for successful deletion
     } catch (error) {
         console.error("Admin: Delete withdrawal error:", error);
         if (error.code === 'P2025') {

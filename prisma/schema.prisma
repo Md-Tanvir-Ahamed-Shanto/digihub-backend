@@ -237,15 +237,22 @@ model Invoice {
   @@map("invoices")
 }
 
+enum PaymentMethodType {
+  CREDIT_CARD
+  PAYPAL
+  BANK_ACCOUNT
+}
+
 model Withdrawal {
   id          String           @id @default(cuid())
-  amount      Decimal
+  amount      Decimal          @db.Decimal(10, 2) // Ensure precision for financial values
   status      WithdrawalStatus @default(PENDING)
   requestedAt DateTime         @default(now())
   processedAt DateTime?
   note        String?
-  partner     Partner          @relation(fields: [partnerId], references: [id])
-  partnerId   String
+  type              PaymentMethodType 
+  partner   Partner @relation(fields: [partnerId], references: [id])
+  partnerId String
 
   @@map("withdrawals")
 }
@@ -421,6 +428,8 @@ enum InvoiceStatus {
 enum WithdrawalStatus {
   PENDING
   APPROVED
+  COMPLETED
+  CANCELED
   PAID
   REJECTED
 }

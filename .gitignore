@@ -43,3 +43,5 @@ Thumbs.db
 .next/
 out/
 /src/generated/prisma
+
+/src/generated/prisma

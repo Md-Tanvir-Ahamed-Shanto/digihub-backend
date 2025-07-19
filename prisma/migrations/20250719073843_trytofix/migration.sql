@@ -1,4 +1,7 @@
 -- CreateEnum
+CREATE TYPE "PaymentMethodType" AS ENUM ('CREDIT_CARD', 'PAYPAL', 'BANK_ACCOUNT');
+
+-- CreateEnum
 CREATE TYPE "LeadStatus" AS ENUM ('PENDING', 'OFFER_SENT', 'ACCEPTED', 'REJECTED', 'CONVERTED', 'ARCHIVED', 'REVIEWING', 'ASSIGNED_TO_PARTNER', 'PENDING_OFFER_REVIEW', 'OFFER_SENT_TO_CLIENT', 'OFFER_REJECTED_BY_CLIENT', 'ACCEPTED_AND_CONVERTED', 'PARTNER_OFFER_PROPOSED', 'OFFER_ACCEPTED_BY_CLIENT');
 
 -- CreateEnum
@@ -215,11 +218,19 @@ CREATE TABLE "invoices" (
 -- CreateTable
 CREATE TABLE "withdrawals" (
     "id" TEXT NOT NULL,
-    "amount" DECIMAL(65,30) NOT NULL,
+    "amount" DECIMAL(10,2) NOT NULL,
     "status" "WithdrawalStatus" NOT NULL DEFAULT 'PENDING',
     "requestedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "processedAt" TIMESTAMP(3),
     "note" TEXT,
+    "type" "PaymentMethodType" NOT NULL,
+    "paypalEmail" TEXT,
+    "bankName" TEXT,
+    "accountHolderName" TEXT,
+    "accountNumber" TEXT,
+    "routingNumber" TEXT,
+    "swiftCode" TEXT,
+    "iban" TEXT,
     "partnerId" TEXT NOT NULL,
 
     CONSTRAINT "withdrawals_pkey" PRIMARY KEY ("id")

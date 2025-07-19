@@ -4,14 +4,15 @@ const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
 const adminRoutes = require("./src/routes/adminRoutes");
-const clientRoutes = require("./src/routes/clientRoutes")
-const partnerRoutes = require("./src/routes/partnerRoutes")
-const leadRoutes = require("./src/routes/leadRoutes")
-const milestoneRoutes = require("./src/routes/milestoneRoutes")
-const projectRoutes = require("./src/routes/projectRoutes")
-const invoiceRoutes = require("./src/routes/invoiceRoutes")
-const contactRoutes = require("./src/routes/contactSubmissionRoutes")
-const cardRoutes = require("./src/routes/paymentCardRoutes")
+const clientRoutes = require("./src/routes/clientRoutes");
+const partnerRoutes = require("./src/routes/partnerRoutes");
+const leadRoutes = require("./src/routes/leadRoutes");
+const milestoneRoutes = require("./src/routes/milestoneRoutes");
+const projectRoutes = require("./src/routes/projectRoutes");
+const invoiceRoutes = require("./src/routes/invoiceRoutes");
+const contactRoutes = require("./src/routes/contactSubmissionRoutes");
+const cardRoutes = require("./src/routes/paymentCardRoutes");
+const withdrawalRoutes = require("./src/routes/withdrawalRoutes");
 
 const corsOptions = {
   origin: "*",
@@ -29,13 +30,14 @@ app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 //Route
 app.use("/api/admin", adminRoutes);
 app.use("/api/client", clientRoutes);
-app.use("/api/partner", partnerRoutes)
-app.use("/api/lead",leadRoutes)
-app.use("/api/project", projectRoutes)
-app.use("/api/milestone", milestoneRoutes)
-app.use("/api/invoice", invoiceRoutes)
-app.use("/api/contact", contactRoutes)
+app.use("/api/partner", partnerRoutes);
+app.use("/api/lead", leadRoutes);
+app.use("/api/project", projectRoutes);
+app.use("/api/milestone", milestoneRoutes);
+app.use("/api/invoice", invoiceRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/api/card", cardRoutes);
+app.use("/api/withdrawal", withdrawalRoutes);
 
 app.use("/", (req, res) => {
   res.send("Server in Running...");
