@@ -26,7 +26,7 @@ router.get('/profile', authMiddleware.authenticate, roleMiddleware.isPartner, pa
 router.put('/profile', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.updatePartnerProfile);
 router.post('/withdrawals/request', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.requestWithdrawal);
 router.get('/withdrawals', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.getPartnerWithdrawals);
-router.post("/update-credentials", roleMiddleware.isPartner, partnerController.updateCredentials);
+router.post("/update-credentials",authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.updateCredentials);
 
 
 router.post('/', authMiddleware.authenticate, roleMiddleware.isAdmin, partnerController.createPartnerByAdmin);
