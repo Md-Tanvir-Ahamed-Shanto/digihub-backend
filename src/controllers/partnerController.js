@@ -121,7 +121,7 @@ exports.getPartnerProfile = async (req, res) => {
                         assignedProjects: true,
                         milestones: true,
                         withdrawals: true,
-                        supportTickets: true,
+                       
                     }
                 }
             },
@@ -348,7 +348,7 @@ exports.getAllPartnersForAdmin = async (req, res) => {
                         assignedProjects: true,
                         milestones: true,
                         withdrawals: true,
-                        supportTickets: true,
+                 
                        
                     }
                 }

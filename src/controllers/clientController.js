@@ -203,7 +203,7 @@ exports.getClientProfile = async (req, res) => {
                     select: {
                         projects: true,
                         invoices: true,
-                        supportTickets: true,
+                       
                     }
                 }
             },
@@ -287,7 +287,7 @@ exports.getAllClientsForAdmin = async (req, res) => {
                         projects: true,
                         payments: true,
                         invoices: true,
-                        supportTickets: true,
+                       
                     }
                 }
             },
@@ -309,7 +309,7 @@ exports.getClientByIdForAdmin = async (req, res) => {
                 leads: true,
                 projects: true,
                 payments: true,
-                supportTickets: true,
+              
                 invoices: true,
             },
         });

@@ -13,6 +13,7 @@ const invoiceRoutes = require("./src/routes/invoiceRoutes");
 const contactRoutes = require("./src/routes/contactSubmissionRoutes");
 const cardRoutes = require("./src/routes/paymentCardRoutes");
 const withdrawalRoutes = require("./src/routes/withdrawalRoutes");
+const supportRoutes =  require("./src/routes/supportRoutes")
 
 const corsOptions = {
   origin: "*",
@@ -38,6 +39,7 @@ app.use("/api/invoice", invoiceRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/card", cardRoutes);
 app.use("/api/withdrawal", withdrawalRoutes);
+app.use("/api/support", supportRoutes);
 
 app.use("/", (req, res) => {
   res.send("Server in Running...");

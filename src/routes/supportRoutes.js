@@ -1,90 +1,35 @@
 // src/routes/supportRoutes.js
 const express = require('express');
 const router = express.Router();
-const supportController = require('../controllers/supportController');
 const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
+const {
+  createIssue,
+  getClientIssues,
+  clientReplyToIssue,
+  getPartnerIssues,
+  partnerReplyToIssue,
+  closeIssue,
+  getAllIssues,
+  changeStatus,
+  deleteIssue,
+  assignToPartner
+} = require('../controllers/supportController');
 
-// --- Client-Specific Support Ticket Routes ---
-router.post('/client/tickets',
-    authMiddleware.authenticate,
-    roleMiddleware.isClient,
-    supportController.createSupportTicketByClient
-);
-router.get('/client/tickets',
-    authMiddleware.authenticate,
-    roleMiddleware.isClient,
-    supportController.getClientSupportTickets
-);
-router.get('/client/tickets/:id',
-    authMiddleware.authenticate,
-    roleMiddleware.isClient,
-    supportController.getClientSupportTicketById
-);
-router.post('/client/tickets/:id/responses',
-    authMiddleware.authenticate,
-    roleMiddleware.isClient,
-    supportController.addResponseByClient
-);
+// Client routes
+router.post('/issues', createIssue);                      // Client creates issue
+router.get('/client/:clientId/issues', getClientIssues);  // Client views their issues
+router.post('/client/issues/:ticketId/reply', clientReplyToIssue); // Client replies
 
-// --- Partner-Specific Support Ticket Routes ---
-router.get('/partner/tickets',
-    authMiddleware.authenticate,
-    roleMiddleware.isPartner,
-    supportController.getPartnerAssignedTickets
-);
-router.get('/partner/tickets/:id',
-    authMiddleware.authenticate,
-    roleMiddleware.isPartner,
-    supportController.getPartnerSupportTicketById
-);
-router.put('/partner/tickets/:id', // Partner can update status/priority
-    authMiddleware.authenticate,
-    roleMiddleware.isPartner,
-    supportController.updateSupportTicketByPartner
-);
-router.post('/partner/tickets/:id/responses',
-    authMiddleware.authenticate,
-    roleMiddleware.isPartner,
-    supportController.addResponseByPartner
-);
+// Partner routes  
+router.get('/partner/:partnerId/issues', getPartnerIssues);        // Partner views assigned issues
+router.post('/partner/issues/:ticketId/reply', partnerReplyToIssue); // Partner replies
+router.put('/issues/:id/close', closeIssue);                       // Partner closes issue
 
-
-// --- Admin-Specific Support Ticket Routes ---
-router.post('/admin/tickets',
-    authMiddleware.authenticate,
-    roleMiddleware.isAdmin,
-    supportController.createSupportTicketByAdmin
-);
-router.get('/admin/tickets',
-    authMiddleware.authenticate,
-    roleMiddleware.isAdmin,
-    supportController.getAllSupportTicketsForAdmin
-);
-router.get('/admin/tickets/:id',
-    authMiddleware.authenticate,
-    roleMiddleware.isAdmin,
-    supportController.getSupportTicketByIdForAdmin
-);
-router.put('/admin/tickets/:id',
-    authMiddleware.authenticate,
-    roleMiddleware.isAdmin,
-    supportController.updateSupportTicketByAdmin
-);
-router.delete('/admin/tickets/:id',
-    authMiddleware.authenticate,
-    roleMiddleware.isAdmin,
-    supportController.deleteSupportTicketByAdmin
-);
-router.post('/admin/tickets/:id/responses', // Admin adds a response
-    authMiddleware.authenticate,
-    roleMiddleware.isAdmin,
-    supportController.addResponseByAdmin
-);
-router.get('/admin/tickets/:id/responses', // Admin views all responses for a ticket
-    authMiddleware.authenticate,
-    roleMiddleware.isAdmin,
-    supportController.getTicketResponsesForAdmin
-);
+// Admin routes
+router.get('/admin/issues', getAllIssues);              // Admin sees all issues
+router.put('/admin/issues/:id/status', changeStatus);   // Admin changes status
+router.delete('/admin/issues/:id', deleteIssue);        // Admin deletes issue
+router.put('/admin/issues/:id/assign', assignToPartner); // Admin assigns to partner
 
 module.exports = router;

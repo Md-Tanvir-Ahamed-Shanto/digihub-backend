@@ -20,7 +20,6 @@ model Admin {
   processedLeads     Lead[]          @relation("AdminProcessedLeads")
   approvedMilestones Milestone[]
   managedProjects    Project[]       @relation(name: "AdminCreatedProjects")
-  supportTickets     SupportTicket[]
   expenses           Expense[]
 
   @@map("admins")
@@ -51,7 +50,6 @@ model Partner {
   assignedProjects    Project[]       @relation(name: "AssignedProjects")
   milestones          Milestone[]
   withdrawals         Withdrawal[]
-  supportTickets      SupportTicket[]
   assignedLeads       Lead[]          @relation(name: "AssignedLeads")
 
   @@map("partners")
@@ -73,7 +71,6 @@ model Client {
   leads                    Lead[]
   projects                 Project[]
   payments                 Payment[]
-  supportTickets           SupportTicket[]
   invoices                 Invoice[]
   paymentCards             PaymentCard[]
   maintenanceSubscriptions MaintenanceSubscription[]
@@ -150,7 +147,6 @@ model Project {
   payments                 Payment[]
   maintenanceSubscriptions MaintenanceSubscription[]
   invoices                 Invoice[]
-  supportTickets           SupportTicket[]
 
   @@map("projects")
 }
@@ -237,11 +233,7 @@ model Invoice {
   @@map("invoices")
 }
 
-enum PaymentMethodType {
-  CREDIT_CARD
-  PAYPAL
-  BANK_ACCOUNT
-}
+
 
 model Withdrawal {
   id          String           @id @default(cuid())
@@ -269,37 +261,39 @@ model PaymentCard {
   @@map("payment_card")
 }
 
-model SupportTicket {
-  id         String            @id @default(cuid())
-  subject    String
-  message    String
-  status     SupportStatus     @default(OPEN)
-  priority   SupportPriority   @default(MEDIUM)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-  client     Client            @relation(fields: [clientId], references: [id])
-  clientId   String
-  project    Project?          @relation(fields: [projectId], references: [id])
-  projectId  String?
-  assignedTo Partner?          @relation(fields: [partnerId], references: [id])
-  partnerId  String?
-  reviewedBy Admin?            @relation(fields: [adminId], references: [id])
-  adminId    String?
-  responses  SupportResponse[]
 
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  subject     String
+  description String
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  status      String   @default("OPEN")   // OPEN, CLOSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  clientId    String
+  projectId   String
+  partnerId   String?  // assigned partner for the project
+  
+  responses   SupportResponse[]
+  
   @@map("support_tickets")
 }
 
 model SupportResponse {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   message   String
-  isAdmin   Boolean       @default(false)
-  createdAt DateTime      @default(now())
-  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
+  userType  String   // CLIENT or PARTNER
+  createdAt DateTime @default(now())
+  
   ticketId  String
-
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
   @@map("support_responses")
 }
+
+
 
 model Expense {
   id          String   @id @default(cuid())
@@ -365,6 +359,9 @@ model ContactSubmission {
 
   @@map("contact_submissions")
 }
+
+
+// ENUM
 
 enum LeadStatus {
   PENDING
@@ -459,4 +456,11 @@ enum SubscriptionStatus {
   EXPIRED
   PAUSED
   TRIAL
+}
+
+
+enum PaymentMethodType {
+  CREDIT_CARD
+  PAYPAL
+  BANK_ACCOUNT
 }

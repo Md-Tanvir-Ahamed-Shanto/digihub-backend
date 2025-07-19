@@ -1,7 +1,4 @@
 -- CreateEnum
-CREATE TYPE "PaymentMethodType" AS ENUM ('CREDIT_CARD', 'PAYPAL', 'BANK_ACCOUNT');
-
--- CreateEnum
 CREATE TYPE "LeadStatus" AS ENUM ('PENDING', 'OFFER_SENT', 'ACCEPTED', 'REJECTED', 'CONVERTED', 'ARCHIVED', 'REVIEWING', 'ASSIGNED_TO_PARTNER', 'PENDING_OFFER_REVIEW', 'OFFER_SENT_TO_CLIENT', 'OFFER_REJECTED_BY_CLIENT', 'ACCEPTED_AND_CONVERTED', 'PARTNER_OFFER_PROPOSED', 'OFFER_ACCEPTED_BY_CLIENT');
 
 -- CreateEnum
@@ -20,7 +17,7 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAIL
 CREATE TYPE "InvoiceStatus" AS ENUM ('PENDING', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "WithdrawalStatus" AS ENUM ('PENDING', 'APPROVED', 'PAID', 'REJECTED');
+CREATE TYPE "WithdrawalStatus" AS ENUM ('PENDING', 'APPROVED', 'COMPLETED', 'CANCELED', 'PAID', 'REJECTED');
 
 -- CreateEnum
 CREATE TYPE "SupportStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED');
@@ -33,6 +30,9 @@ CREATE TYPE "BillingCycle" AS ENUM ('MONTHLY', 'ANNUALLY');
 
 -- CreateEnum
 CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'CANCELLED', 'EXPIRED', 'PAUSED', 'TRIAL');
+
+-- CreateEnum
+CREATE TYPE "PaymentMethodType" AS ENUM ('CREDIT_CARD', 'PAYPAL', 'BANK_ACCOUNT');
 
 -- CreateTable
 CREATE TABLE "admins" (
@@ -224,13 +224,6 @@ CREATE TABLE "withdrawals" (
     "processedAt" TIMESTAMP(3),
     "note" TEXT,
     "type" "PaymentMethodType" NOT NULL,
-    "paypalEmail" TEXT,
-    "bankName" TEXT,
-    "accountHolderName" TEXT,
-    "accountNumber" TEXT,
-    "routingNumber" TEXT,
-    "swiftCode" TEXT,
-    "iban" TEXT,
     "partnerId" TEXT NOT NULL,
 
     CONSTRAINT "withdrawals_pkey" PRIMARY KEY ("id")
@@ -252,15 +245,14 @@ CREATE TABLE "payment_card" (
 CREATE TABLE "support_tickets" (
     "id" TEXT NOT NULL,
     "subject" TEXT NOT NULL,
-    "message" TEXT NOT NULL,
-    "status" "SupportStatus" NOT NULL DEFAULT 'OPEN',
-    "priority" "SupportPriority" NOT NULL DEFAULT 'MEDIUM',
+    "description" TEXT NOT NULL,
+    "priority" TEXT NOT NULL DEFAULT 'MEDIUM',
+    "status" TEXT NOT NULL DEFAULT 'OPEN',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "clientId" TEXT NOT NULL,
-    "projectId" TEXT,
+    "projectId" TEXT NOT NULL,
     "partnerId" TEXT,
-    "adminId" TEXT,
 
     CONSTRAINT "support_tickets_pkey" PRIMARY KEY ("id")
 );
@@ -269,7 +261,7 @@ CREATE TABLE "support_tickets" (
 CREATE TABLE "support_responses" (
     "id" TEXT NOT NULL,
     "message" TEXT NOT NULL,
-    "isAdmin" BOOLEAN NOT NULL DEFAULT false,
+    "userType" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "ticketId" TEXT NOT NULL,
 
@@ -430,19 +422,7 @@ ALTER TABLE "withdrawals" ADD CONSTRAINT "withdrawals_partnerId_fkey" FOREIGN KE
 ALTER TABLE "payment_card" ADD CONSTRAINT "payment_card_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_partnerId_fkey" FOREIGN KEY ("partnerId") REFERENCES "partners"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "support_tickets" ADD CONSTRAINT "support_tickets_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "admins"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "support_responses" ADD CONSTRAINT "support_responses_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "support_tickets"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "support_responses" ADD CONSTRAINT "support_responses_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "support_tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "expenses" ADD CONSTRAINT "expenses_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "admins"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

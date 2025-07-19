@@ -84,7 +84,7 @@ exports.getAllProjectsForAdmin = async (req, res) => {
                         milestones: true,
                         payments: true,
                         invoices: true,
-                        supportTickets: true,
+                     
                     }
                 }
             },
