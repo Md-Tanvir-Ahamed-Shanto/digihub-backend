@@ -3,21 +3,43 @@ const prisma = new PrismaClient();
 // Client creates issue
 const createIssue = async (req, res) => {
   try {
-    const { subject, description, priority, projectId, clientId } = req.body;
-    
+    const { subject, description, priority, projectId } = req.body;
+    const clientId = req.user.id; 
+
+    if (!subject || !projectId || !clientId) {
+      return res.status(400).json({ success: false, message: 'Subject, Project ID, and Client ID are required.' });
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: { 
+        id: true, 
+        partnerId: true 
+      }
+    });
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    // Directly use the partnerId from the found project
+    const assignedPartnerId = project.partnerId;
+
     const ticket = await prisma.supportTicket.create({
       data: {
         subject,
         description,
         priority: priority || 'MEDIUM',
-        clientId,
-        projectId
+        clientId: clientId, 
+        projectId: projectId,
+        partnerId: assignedPartnerId, // This will always be the project's assigned partner
+        status: "OPEN"
       }
     });
-    
-    res.json({ success: true, data: ticket });
+
+    res.status(201).json({ success: true, data: ticket }); 
   } catch (error) {
-    console.log("Error creating issue:", error);
+    console.error("Error creating issue (ticket):", error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -28,7 +28,7 @@ exports.partnerLogin = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: partner.id, email: partner.email, role: 'partner' },
+            { id: partner.id,name: partner.name, email: partner.email, role: 'partner' },
             config.jwtSecret,
             { expiresIn: '8h' }
         );

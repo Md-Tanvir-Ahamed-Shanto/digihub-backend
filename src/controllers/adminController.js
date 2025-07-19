@@ -18,7 +18,7 @@ exports.adminLogin = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: admin.id, email: admin.email, role: 'admin' },
+      { id: admin.id,name: admin.name, email: admin.email, role: 'admin' },
       config.jwtSecret,
       { expiresIn: '8h' }
     );

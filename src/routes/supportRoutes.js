@@ -17,19 +17,19 @@ const {
 } = require('../controllers/supportController');
 
 // Client routes
-router.post('/issues', createIssue);                      // Client creates issue
-router.get('/client/:clientId/issues', getClientIssues);  // Client views their issues
-router.post('/client/issues/:ticketId/reply', clientReplyToIssue); // Client replies
+router.post('/issues',authMiddleware.authenticate, createIssue);                      // Client creates issue
+router.get('/client/:clientId/issues',authMiddleware.authenticate, getClientIssues);  // Client views their issues
+router.post('/client/issues/:ticketId/reply',authMiddleware.authenticate, clientReplyToIssue); // Client replies
 
 // Partner routes  
-router.get('/partner/:partnerId/issues', getPartnerIssues);        // Partner views assigned issues
-router.post('/partner/issues/:ticketId/reply', partnerReplyToIssue); // Partner replies
-router.put('/issues/:id/close', closeIssue);                       // Partner closes issue
+router.get('/partner/:partnerId/issues',authMiddleware.authenticate, getPartnerIssues);        // Partner views assigned issues
+router.post('/partner/issues/:ticketId/reply',authMiddleware.authenticate, partnerReplyToIssue); // Partner replies
+router.put('/issues/:id/close',authMiddleware.authenticate, closeIssue);                       // Partner closes issue
 
 // Admin routes
-router.get('/admin/issues', getAllIssues);              // Admin sees all issues
-router.put('/admin/issues/:id/status', changeStatus);   // Admin changes status
-router.delete('/admin/issues/:id', deleteIssue);        // Admin deletes issue
-router.put('/admin/issues/:id/assign', assignToPartner); // Admin assigns to partner
+router.get('/admin/issues',authMiddleware.authenticate, getAllIssues);              // Admin sees all issues
+router.put('/admin/issues/:id/status',authMiddleware.authenticate, changeStatus);   // Admin changes status
+router.delete('/admin/issues/:id',authMiddleware.authenticate, deleteIssue);        // Admin deletes issue
+router.put('/admin/issues/:id/assign',authMiddleware.authenticate, assignToPartner); // Admin assigns to partner
 
 module.exports = router;

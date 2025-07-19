@@ -31,7 +31,7 @@ exports.clientLogin = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: client.id, email: client.email, role: 'client' },
+            { id: client.id,name: client.name, email: client.email, role: 'client' },
             config.jwtSecret,
             { expiresIn: '8h' }
         );
