@@ -48,7 +48,6 @@ exports.getAdminProfile = async (req, res) => {
             processedLeads: true,
             approvedMilestones: true,
             managedProjects: true,
-            expenses: true,
             systemSettings: true,
           }
         }
@@ -141,7 +140,6 @@ exports.getAllAdmins = async (req, res) => {
             approvedMilestones: true,
             managedProjects: true,
   
-            expenses: true,
             systemSettings: true,
           }
         }
@@ -166,7 +164,6 @@ exports.getAdminById = async (req, res) => {
         approvedMilestones: { select: { id: true, title: true, status: true } },
         managedProjects: { select: { id: true, title: true, status: true } },
         supportTickets: { select: { id: true, subject: true, status: true } },
-        expenses: { select: { id: true, title: true, amount: true, category: true } },
         systemSettings: { select: { id: true, key: true, value: true } },
       },
     });

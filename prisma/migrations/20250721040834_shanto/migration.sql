@@ -29,7 +29,7 @@ CREATE TYPE "SupportPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
 CREATE TYPE "BillingCycle" AS ENUM ('MONTHLY', 'ANNUALLY');
 
 -- CreateEnum
-CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'CANCELLED', 'EXPIRED', 'PAUSED', 'TRIAL');
+CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'CANCELED', 'INCOMPLETE', 'EXPIRED');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethodType" AS ENUM ('CREDIT_CARD', 'PAYPAL', 'BANK_ACCOUNT');
@@ -250,6 +250,7 @@ CREATE TABLE "support_tickets" (
     "status" TEXT NOT NULL DEFAULT 'OPEN',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "projectName" TEXT,
     "clientId" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "partnerId" TEXT,
@@ -270,51 +271,64 @@ CREATE TABLE "support_responses" (
 
 -- CreateTable
 CREATE TABLE "expenses" (
-    "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "description" TEXT,
-    "amount" DECIMAL(65,30) NOT NULL,
+    "id" SERIAL NOT NULL,
     "category" TEXT NOT NULL,
-    "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "amount" DOUBLE PRECISION NOT NULL,
+    "date" TIMESTAMP(3) NOT NULL,
+    "description" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "adminId" TEXT NOT NULL,
 
     CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "maintenance_plans" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "description" TEXT,
-    "price" DECIMAL(10,2) NOT NULL,
-    "billingCycle" "BillingCycle" NOT NULL,
-    "features" TEXT[],
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+CREATE TABLE "revenues" (
+    "id" SERIAL NOT NULL,
+    "month" TEXT NOT NULL,
+    "amount" DOUBLE PRECISION NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "maintenance_plans_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "revenues_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "maintenance_subscriptions" (
+CREATE TABLE "summarys" (
+    "id" SERIAL NOT NULL,
+    "month" TEXT NOT NULL,
+    "totalRevenue" DOUBLE PRECISION NOT NULL,
+    "gstCollected" DOUBLE PRECISION NOT NULL,
+    "totalExpense" DOUBLE PRECISION NOT NULL,
+    "netProfit" DOUBLE PRECISION NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "summarys_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "gst_reports" (
+    "id" SERIAL NOT NULL,
+    "period" TEXT NOT NULL,
+    "gstCollected" DOUBLE PRECISION NOT NULL,
+    "gstPaid" DOUBLE PRECISION NOT NULL,
+    "status" TEXT NOT NULL,
+    "dueDate" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "gst_reports_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MaintenanceSubscription" (
     "id" TEXT NOT NULL,
     "clientId" TEXT NOT NULL,
-    "planId" TEXT NOT NULL,
+    "pricePerMonth" DOUBLE PRECISION NOT NULL,
     "status" "SubscriptionStatus" NOT NULL DEFAULT 'ACTIVE',
-    "startDate" TIMESTAMP(3) NOT NULL,
-    "endDate" TIMESTAMP(3),
+    "gatewaySubscriptionId" TEXT,
     "nextBillingDate" TIMESTAMP(3) NOT NULL,
-    "lastPaymentDate" TIMESTAMP(3),
-    "paymentMethodRef" TEXT,
-    "autoRenew" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "projectId" TEXT,
 
-    CONSTRAINT "maintenance_subscriptions_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "MaintenanceSubscription_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -356,7 +370,7 @@ CREATE UNIQUE INDEX "projects_leadId_key" ON "projects"("leadId");
 CREATE UNIQUE INDEX "invoices_invoiceNumber_key" ON "invoices"("invoiceNumber");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "maintenance_plans_name_key" ON "maintenance_plans"("name");
+CREATE UNIQUE INDEX "MaintenanceSubscription_clientId_key" ON "MaintenanceSubscription"("clientId");
 
 -- AddForeignKey
 ALTER TABLE "partners" ADD CONSTRAINT "partners_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "admins"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -404,7 +418,7 @@ ALTER TABLE "payments" ADD CONSTRAINT "payments_milestoneId_fkey" FOREIGN KEY ("
 ALTER TABLE "payments" ADD CONSTRAINT "payments_invoiceId_fkey" FOREIGN KEY ("invoiceId") REFERENCES "invoices"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "payments" ADD CONSTRAINT "payments_maintenanceSubscriptionId_fkey" FOREIGN KEY ("maintenanceSubscriptionId") REFERENCES "maintenance_subscriptions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "payments" ADD CONSTRAINT "payments_maintenanceSubscriptionId_fkey" FOREIGN KEY ("maintenanceSubscriptionId") REFERENCES "MaintenanceSubscription"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -425,13 +439,4 @@ ALTER TABLE "payment_card" ADD CONSTRAINT "payment_card_clientId_fkey" FOREIGN K
 ALTER TABLE "support_responses" ADD CONSTRAINT "support_responses_ticketId_fkey" FOREIGN KEY ("ticketId") REFERENCES "support_tickets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "expenses" ADD CONSTRAINT "expenses_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "admins"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "maintenance_subscriptions" ADD CONSTRAINT "maintenance_subscriptions_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "maintenance_subscriptions" ADD CONSTRAINT "maintenance_subscriptions_planId_fkey" FOREIGN KEY ("planId") REFERENCES "maintenance_plans"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "maintenance_subscriptions" ADD CONSTRAINT "maintenance_subscriptions_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "MaintenanceSubscription" ADD CONSTRAINT "MaintenanceSubscription_clientId_fkey" FOREIGN KEY ("clientId") REFERENCES "clients"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
