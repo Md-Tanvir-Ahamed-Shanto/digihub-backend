@@ -6,11 +6,10 @@ const Decimal = require('decimal.js'); // For precise decimal handling
 // --- Admin-specific Expense Management Routes ---
 
 exports.createExpense = async (req, res) => {
-    const { title, description, amount, category, date } = req.body;
-    const adminId = req.user.id; // Admin ID from authenticated user
+    const {description, amount, category, date } = req.body;
 
-    if (!adminId || !title || amount === undefined || !category) {
-        return res.status(400).json({ message: "Title, amount, category, and a valid Admin ID are required." });
+    if ( amount === undefined || !category) {
+        return res.status(400).json({ message: "amount, category, are required." });
     }
     if (new Decimal(amount).lessThanOrEqualTo(0)) {
         return res.status(400).json({ message: "Amount must be a positive number." });
@@ -19,12 +18,10 @@ exports.createExpense = async (req, res) => {
     try {
         const newExpense = await prisma.expense.create({
             data: {
-                title,
                 description,
                 amount: new Decimal(amount),
                 category,
-                date: date ? new Date(date) : new Date(), // Use provided date or default to now
-                adminId,
+                date: date ? new Date(date) : new Date(),
             },
         });
         res.status(201).json({ message: "Expense created successfully", expense: newExpense });
@@ -37,9 +34,6 @@ exports.createExpense = async (req, res) => {
 exports.getAllExpenses = async (req, res) => {
     try {
         const expenses = await prisma.expense.findMany({
-            include: {
-                admin: { select: { id: true, name: true, email: true } }, // Include admin details
-            },
             orderBy: { createdAt: 'desc' }
         });
         res.status(200).json(expenses);
@@ -54,9 +48,6 @@ exports.getExpenseById = async (req, res) => {
     try {
         const expense = await prisma.expense.findUnique({
             where: { id },
-            include: {
-                admin: { select: { id: true, name: true, email: true } },
-            },
         });
         if (!expense) {
             return res.status(404).json({ message: "Expense not found" });
