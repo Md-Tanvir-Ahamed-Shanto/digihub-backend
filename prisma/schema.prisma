@@ -67,6 +67,7 @@ model Client {
   verificationExpires DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+  
 
   leads        Lead[]
   projects     Project[]

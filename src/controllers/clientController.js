@@ -31,7 +31,7 @@ exports.clientLogin = async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: client.id,name: client.name, email: client.email, role: 'client' },
+            { id: client.id, name: client.name, email: client.email, role: 'client' },
             config.jwtSecret,
             { expiresIn: '8h' }
         );
@@ -46,6 +46,7 @@ exports.clientLogin = async (req, res) => {
                 companyName: client.companyName,
                 isActive: client.isActive,
                 isEmailVerified: client.isEmailVerified,
+                hasMaintenanceSubscription: client.hasMaintenanceSubscription, // Include new field
                 role: 'client'
             }
         });
@@ -105,6 +106,7 @@ exports.registerClient = async (req, res) => {
                 password: null, // Password is NOT set at this stage
                 verificationToken, // Store the generated token
                 verificationExpires, // Store the token expiry
+                hasMaintenanceSubscription: false, // Default to false on registration
             },
         });
 
@@ -179,8 +181,9 @@ exports.setClientPasswordAndActivate = async (req, res) => {
     } catch (error) {
         console.error("Client set password and activate error:", error);
         const redirectUrl = `${FRONTEND_URL}/set-password-failed?reason=server_error`;
-        res.redirect(redirectUrl);
-        // res.status(500).json({ message: "Internal server error." });
+        // In a real API, you might send JSON, but if this is an endpoint meant for redirects,
+        // you'd handle that. For a POST request, stick to JSON for consistency.
+        res.status(500).json({ message: "Internal server error." });
     }
 };
 
@@ -197,13 +200,14 @@ exports.getClientProfile = async (req, res) => {
                 phone: true, // Include phone number
                 isActive: true,
                 isEmailVerified: true,
+                hasMaintenanceSubscription: true, // Include new field
+                maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
                 _count: {
                     select: {
                         projects: true,
                         invoices: true,
-                       
                     }
                 }
             },
@@ -255,6 +259,8 @@ exports.updateClientProfile = async (req, res) => {
                 phone: true, // Include phone number
                 isActive: true,
                 isEmailVerified: true,
+                hasMaintenanceSubscription: true, // Include new field
+                maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
             },
@@ -279,6 +285,8 @@ exports.getAllClientsForAdmin = async (req, res) => {
                 phone: true, // Include phone number
                 isActive: true,
                 isEmailVerified: true,
+                hasMaintenanceSubscription: true, // Include new field
+                maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
                 _count: {
@@ -287,7 +295,6 @@ exports.getAllClientsForAdmin = async (req, res) => {
                         projects: true,
                         payments: true,
                         invoices: true,
-                       
                     }
                 }
             },
@@ -309,8 +316,9 @@ exports.getClientByIdForAdmin = async (req, res) => {
                 leads: true,
                 projects: true,
                 payments: true,
-              
                 invoices: true,
+                // If you had a dedicated MaintenanceSubscription model, you'd include it here
+                // maintenanceSubscription: true,
             },
         });
         if (!client) {
@@ -324,8 +332,7 @@ exports.getClientByIdForAdmin = async (req, res) => {
 };
 
 exports.updateClientByAdmin = async (req, res) => {
-    const { id } = req.params;
-    const { name, email, companyName, phone, isActive, password, isEmailVerified } = req.body;
+    const { name, email, companyName, phone, isActive, password, isEmailVerified, hasMaintenanceSubscription, maintenanceSubscriptionExpiresAt } = req.body;
     try {
         const updateData = {};
         if (name) updateData.name = name;
@@ -335,6 +342,12 @@ exports.updateClientByAdmin = async (req, res) => {
         if (isActive !== undefined) updateData.isActive = !!isActive;
         if (isEmailVerified !== undefined) updateData.isEmailVerified = !!isEmailVerified;
         if (password) updateData.password = await bcrypt.hash(password, 10);
+        // Admin can update maintenance subscription status
+        if (hasMaintenanceSubscription !== undefined) updateData.hasMaintenanceSubscription = !!hasMaintenanceSubscription;
+        if (maintenanceSubscriptionExpiresAt !== undefined) {
+             updateData.maintenanceSubscriptionExpiresAt = maintenanceSubscriptionExpiresAt ? new Date(maintenanceSubscriptionExpiresAt) : null;
+        }
+
 
         const updatedClient = await prisma.client.update({
             where: { id },
@@ -347,6 +360,8 @@ exports.updateClientByAdmin = async (req, res) => {
                 phone: true, // Include phone
                 isActive: true,
                 isEmailVerified: true,
+                hasMaintenanceSubscription: true, // Include new field
+                maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
             },
@@ -396,7 +411,7 @@ exports.getClientLeads = async (req, res) => {
             where: {
                 clientId: clientId,
             },
-             select: {
+            select: {
                 id: true,
                 name: true,
                 email: true,
@@ -411,33 +426,30 @@ exports.getClientLeads = async (req, res) => {
                 status: true,
                 createdAt: true,
                 updatedAt: true,
-                includesGST:true,
+                includesGST: true,
 
                 // Client-facing offer details:
-                offerPrice: true,     
-                includesGST: true,
+                offerPrice: true,
                 adminOfferPreparedAt: true,
 
-               
-             
-                processedBy: { 
+
+                processedBy: {
                     select: {
                         id: true,
                         name: true,
-                       
                     },
                 },
-                
-                project: { 
+
+                project: {
                     select: {
                         id: true,
                         title: true,
                         status: true,
-                        offerPrice: true, 
+                        offerPrice: true,
                     },
                 },
             },
-        
+
             orderBy: {
                 createdAt: 'desc',
             },
@@ -463,24 +475,78 @@ exports.getClientLeads = async (req, res) => {
     }
 };
 
-exports.updateCredentials = async (req, res) => { 
+exports.updateCredentials = async (req, res) => {
     try {
-      const { email,currentPassword, password } = req.body;
-      const client = await prisma.client.findUnique({ where: { id: req.user.id } });
-      if (!client) {
-        return res.status(404).json({ message: "client not found" });
-      }
-      const isPasswordValid = await bcrypt.compare(currentPassword, client.password);
-      if (!isPasswordValid) {
-        return res.status(400).json({ message: "Invalid current password" });
-      }
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await prisma.client.update({
-        where: { id: req.user.id },
-        data: { email, password: hashedPassword },
-      });
-      res.status(200).json({ message: "Credentials updated successfully" });
+        const { email, currentPassword, password } = req.body;
+        const client = await prisma.client.findUnique({ where: { id: req.user.id } });
+        if (!client) {
+            return res.status(404).json({ message: "client not found" });
+        }
+        if (!client.password) {
+             return res.status(400).json({ message: "No current password set. Cannot update credentials without an existing password." });
+        }
+        const isPasswordValid = await bcrypt.compare(currentPassword, client.password);
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: "Invalid current password" });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await prisma.client.update({
+            where: { id: req.user.id },
+            data: { email, password: hashedPassword },
+        });
+        res.status(200).json({ message: "Credentials updated successfully" });
     } catch (error) {
-      return res.status(500).json({ message: "Internal server error" });
+        console.error("Update credentials error:", error); // Added console.error
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// NEW: Admin Get All Clients with Maintenance Subscription
+exports.getAllClientsWithMaintenanceSubscription = async (req, res) => {
+    try {
+        // You might want to add pagination, filtering, or sorting options here
+        const clients = await prisma.client.findMany({
+            where: {
+                hasMaintenanceSubscription: true,
+                // Optionally, filter by active subscriptions (not expired)
+                // maintenanceSubscriptionExpiresAt: {
+                //     gt: new Date(),
+                // },
+            },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                companyName: true,
+                phone: true,
+                isActive: true,
+                isEmailVerified: true,
+                hasMaintenanceSubscription: true,
+                maintenanceSubscriptionExpiresAt: true,
+                createdAt: true,
+                updatedAt: true,
+                _count: {
+                    select: {
+                        projects: true,
+                        invoices: true,
+                        payments: true,
+                        leads: true,
+                    }
+                }
+            },
+            orderBy: {
+                maintenanceSubscriptionExpiresAt: 'asc', // Order by expiry date
+                createdAt: 'desc',
+            }
+        });
+
+        res.status(200).json({
+            message: "Clients with maintenance subscriptions fetched successfully.",
+            data: clients,
+        });
+
+    } catch (error) {
+        console.error("Admin: Get clients with maintenance subscription error:", error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
