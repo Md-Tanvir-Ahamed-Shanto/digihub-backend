@@ -32,7 +32,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 app.use(cors(corsOptions));
-app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "./src/uploads")));
 
 //Route
 app.use("/api/admin", adminRoutes);
