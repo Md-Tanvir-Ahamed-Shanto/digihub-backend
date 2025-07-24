@@ -361,6 +361,42 @@ model ContactSubmission {
   @@map("contact_submissions")
 }
 
+model Solution {
+  id          String   @id @default(cuid())
+  title       String   @unique
+  description String
+  image       String?  
+  features    String[] 
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("solutions")
+}
+
+model CaseStudy {
+  id            String   @id @default(cuid())
+  title         String   @unique 
+  client        String   
+  description   String
+  image         String? 
+  challenge     String
+  solution      String
+  results       String
+  technologies  String[] 
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("case_studies") 
+}
+
+
+
+
+
+
+
 // ENUM
 
 enum LeadStatus {

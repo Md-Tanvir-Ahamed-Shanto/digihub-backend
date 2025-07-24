@@ -345,6 +345,36 @@ CREATE TABLE "contact_submissions" (
     CONSTRAINT "contact_submissions_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "solutions" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "image" TEXT,
+    "features" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "solutions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "case_studies" (
+    "id" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "client" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "image" TEXT,
+    "challenge" TEXT NOT NULL,
+    "solution" TEXT NOT NULL,
+    "results" TEXT NOT NULL,
+    "technologies" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "case_studies_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "admins_email_key" ON "admins"("email");
 
@@ -371,6 +401,12 @@ CREATE UNIQUE INDEX "invoices_invoiceNumber_key" ON "invoices"("invoiceNumber");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "MaintenanceSubscription_clientId_key" ON "MaintenanceSubscription"("clientId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "solutions_title_key" ON "solutions"("title");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "case_studies_title_key" ON "case_studies"("title");
 
 -- AddForeignKey
 ALTER TABLE "partners" ADD CONSTRAINT "partners_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "admins"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
