@@ -216,7 +216,7 @@ exports.assignPartnerToLead = async (req, res) => {
         }
 
         const { id } = req.params;
-        const { partnerId } = req.body;
+        const { partnerId , partnerProposedCost ,notes, timeline} = req.body;
 
         if (!partnerId) {
             return res.status(400).json({ success: false, message: 'Partner ID is required.' });
@@ -241,6 +241,9 @@ exports.assignPartnerToLead = async (req, res) => {
             data: {
                 assignedPartnerId: partnerId,
                 processedById: adminId,
+                partnerProposedCost: partnerProposedCost,
+                timeline: timeline,
+                notes:notes,
                 status: 'ASSIGNED_TO_PARTNER',
             },
             include: {
