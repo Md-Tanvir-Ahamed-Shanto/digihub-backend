@@ -71,7 +71,7 @@ exports.setPartnerPasswordAndActivate = async (req, res) => {
 
         if (!partner) {
             // Redirect to an error page or send an appropriate response
-            const redirectUrl = `${FRONTEND_URL}/partner/set-password-failed?reason=invalid_or_expired`;
+            const redirectUrl = `${FRONTEND_URL}/set-password-failed?reason=invalid_or_expired`;
             return res.redirect(redirectUrl);
             // return res.status(404).json({ message: "Invalid, expired, or already used token." });
         }
@@ -99,7 +99,7 @@ exports.setPartnerPasswordAndActivate = async (req, res) => {
 
     } catch (error) {
         console.error("Partner set password and activate error:", error);
-        const redirectUrl = `${FRONTEND_URL}/partner/set-password-failed?reason=server_error`;
+        const redirectUrl = `${FRONTEND_URL}/set-password-failed?reason=server_error`;
         res.redirect(redirectUrl);
         // res.status(500).json({ message: "Internal server error." });
     }
@@ -280,7 +280,7 @@ exports.createPartnerByAdmin = async (req, res) => {
                     },
                 });
 
-                const setPasswordLink = `${FRONTEND_URL}/partner/set-password?token=${verificationToken}`;
+                const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
                 await emailService.sendPartnerSetPasswordEmail(email, setPasswordLink, name);
                 return res.status(200).json({
                     message: "Partner account already exists but is inactive. An activation link has been re-sent to their email.",
@@ -315,7 +315,7 @@ exports.createPartnerByAdmin = async (req, res) => {
         });
 
         // Send email to partner to set their password
-        const setPasswordLink = `${FRONTEND_URL}/partner/set-password?token=${verificationToken}`;
+        const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
         await emailService.sendPartnerSetPasswordEmail(email, setPasswordLink, name);
 
         // Exclude sensitive info from response
