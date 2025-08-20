@@ -19,7 +19,7 @@ const transporter = nodemailer.createTransport({
 exports.sendEmail = async (mailOptions) => {
     try {
         // Set default 'from' if not provided in mailOptions
-        mailOptions.from = mailOptions.from || process.env.EMAIL_FROM || '"DIGIHUB AUST Support" <support@yourdomain.com>';
+        mailOptions.from = mailOptions.from || process.env.EMAIL_FROM || '"DIGIHUB AUST Support" <support@digihub.com.au>';
 
         const info = await transporter.sendMail(mailOptions);
         console.log(`Email sent to ${mailOptions.to}: ${info.messageId}`);
