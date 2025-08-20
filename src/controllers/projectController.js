@@ -1,4 +1,3 @@
-// src/controllers/projectController.js
 const { PrismaClient } = require('../generated/prisma');
 const prisma = new PrismaClient();
 const Decimal = require('decimal.js'); // For precise decimal calculations
@@ -354,23 +353,60 @@ exports.updateProjectByPartner = async (req, res) => {
 };
 
 // project mark as a complete as a admin, status change 
+exports.markAsComplete = async (req, res) => {
+  const { id } = req.params;
 
-exports.markAsComplete = async (req,res)=>{
-    const { id } = req.params;
-    try {
-        const project = await prisma.project.findUnique({ where: { id } });
-        if (!project) {
-            return res.status(404).json({ message: "Project not found " });
-        }
-        const updateData = {};
-        updateData.status = "COMPLETED";
-        const updatedProject = await prisma.project.update({
-            where: { id },
-            data: updateData,
-        });
-        res.status(200).json({ message: "Project updated successfully by admin", project: updatedProject });
-    } catch (error) {
-        console.error("Admin: Update project error:", error);
-        res.status(500).json({ message: "Internal server error" });
+  try {
+    // 1. Retrieve the project
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        adminMargin: true,
+        offerPrice: true,
+        partnerCost: true,
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found." });
     }
-}
+
+    // Check if the project is already completed
+    if (project.status === "COMPLETED") {
+      return res.status(409).json({ message: "Project is already marked as complete." });
+    }
+
+    // 2. Calculate the revenue amount
+    const revenueAmount = project.adminMargin || (offerPrice - partnerCost) 
+    const currentMonth = new Date().toLocaleString('en-US', { month: 'short' });
+
+    // Use a transaction to ensure both operations succeed or fail together
+    const [updatedProject, newRevenue] = await prisma.$transaction([
+      // 3. Update the project status
+      prisma.project.update({
+        where: { id },
+        data: {
+          status: "COMPLETED",
+        },
+      }),
+      // 4. Create a new revenue entry
+      prisma.revenue.create({
+        data: {
+          month: currentMonth,
+          amount: revenueAmount,
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      message: "Project updated and revenue recorded successfully.",
+      project: updatedProject,
+      revenue: newRevenue,
+    });
+
+  } catch (error) {
+    console.error("Error marking project as complete:", error);
+    res.status(500).json({ message: "Internal server error." });
+  }
+};

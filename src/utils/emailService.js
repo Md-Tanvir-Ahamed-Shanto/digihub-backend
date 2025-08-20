@@ -46,7 +46,7 @@ exports.sendVerificationEmail = async (toEmail, verificationLink, userName) => {
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="https://example.com/your-logo.png" alt="DIGIHUB AUST Logo" style="max-width: 150px; height: auto;">
+                    
                         <h2 style="color: #0056b3;">Welcome to DIGIHUB AUST!</h2>
                     </div>
                     <p>Hello <strong>${userName}</strong>,</p>
@@ -90,7 +90,7 @@ exports.sendSetPasswordEmail = async (toEmail, setPasswordLink, userName) => {
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="https://example.com/your-logo.png" alt="DIGIHUB AUST Logo" style="max-width: 150px; height: auto;">
+                    
                         <h2 style="color: #0056b3;">Welcome to DIGIHUB AUST!</h2>
                     </div>
                     <p>Hello <strong>${userName}</strong>,</p>
@@ -112,6 +112,7 @@ exports.sendSetPasswordEmail = async (toEmail, setPasswordLink, userName) => {
 
         const info = await transporter.sendMail(mailOptions);
         console.log(`Set Password email sent to ${toEmail}: ${info.messageId}`);
+        console.log("Send main Info: ", info);
         return true;
     } catch (error) {
         console.error(`Error sending set password email to ${toEmail}:`, error);
@@ -134,7 +135,7 @@ exports.sendPartnerSetPasswordEmail = async (toEmail, setPasswordLink, partnerNa
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="https://example.com/your-logo.png" alt="DIGIHUB AUST Logo" style="max-width: 150px; height: auto;">
+                    
                         <h2 style="color: #0056b3;">Welcome to DIGIHUB AUST Partner Network!</h2>
                     </div>
                     <p>Hello <strong>${partnerName}</strong>,</p>
@@ -172,7 +173,7 @@ exports.sendProjectOfferToClient = async (toEmail, clientName, projectName, offe
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="https://example.com/your-logo.png" alt="DIGIHUB AUST Logo" style="max-width: 150px; height: auto;">
+                    
                         <h2 style="color: #0056b3;">Project Offer from DIGIHUB AUST</h2>
                     </div>
                     <p>Hello <strong>${clientName}</strong>,</p>
@@ -218,7 +219,7 @@ exports.sendProjectAcceptedConfirmation = async (toEmail, clientName, projectNam
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="https://example.com/your-logo.png" alt="DIGIHUB AUST Logo" style="max-width: 150px; height: auto;">
+                    
                         <h2 style="color: #28a745;">Project Accepted!</h2>
                     </div>
                     <p>Hello <strong>${clientName}</strong>,</p>
@@ -262,7 +263,7 @@ exports.sendProjectRejectedNotification = async (toEmail, clientName, projectNam
             html: `
                 <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                     <div style="text-align: center; margin-bottom: 20px;">
-                        <img src="https://example.com/your-logo.png" alt="DIGIHUB AUST Logo" style="max-width: 150px; height: auto;">
+                    
                         <h2 style="color: #dc3545;">Project Offer Decision</h2>
                     </div>
                     <p>Hello <strong>${clientName}</strong>,</p>
