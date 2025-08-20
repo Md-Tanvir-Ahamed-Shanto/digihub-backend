@@ -5,6 +5,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 
 
+router.post("/r/a", adminController.createAdmin)
 router.post('/login', adminController.adminLogin);
 
 router.use(authMiddleware.authenticate);
