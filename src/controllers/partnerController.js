@@ -315,7 +315,7 @@ exports.createPartnerByAdmin = async (req, res) => {
         });
 
         // Send email to partner to set their password
-        const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
+        const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}&role=partner`;
         await emailService.sendPartnerSetPasswordEmail(email, setPasswordLink, name);
 
         // Exclude sensitive info from response
