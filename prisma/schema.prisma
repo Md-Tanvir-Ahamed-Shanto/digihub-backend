@@ -49,6 +49,7 @@ model Partner {
   assignedProjects    Project[]    @relation(name: "AssignedProjects")
   milestones          Milestone[]
   withdrawals         Withdrawal[]
+  paymentDetails   PaymentDetails[]
   assignedLeads       Lead[]       @relation(name: "AssignedLeads")
 
   @@map("partners")
@@ -148,7 +149,6 @@ model Project {
   milestones       Milestone[]
   payments         Payment[]
   invoices         Invoice[]
-
   @@map("projects")
 }
 
@@ -389,6 +389,21 @@ model CaseStudy {
   updatedAt     DateTime @updatedAt
 
   @@map("case_studies") 
+}
+
+model PaymentDetails {
+  id          String   @id @default(cuid())
+  bankName    String?
+  accountName String?
+  accountNo   String
+  routingNo   String?
+  paypalEmail String?
+  partnerId   String
+  partner     Partner @relation(fields: [partnerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt 
+
+  @@map("payment_details")
 }
 
 

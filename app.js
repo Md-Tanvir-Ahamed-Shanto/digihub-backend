@@ -21,6 +21,7 @@ const gstRerportRoutes = require("./src/routes/gstReportRoutes");
 const solutionRoutes = require("./src/routes/solutionRoutes");
 const caseStudyRoutes = require("./src/routes/caseStudyRoutes");
 const revenueRoutes = require("./src/routes/revenueRoutes")
+const paymentDetailsRoutes = require("./src/routes/paymentDetailsRoutes")
 
 const corsOptions = {
   origin: "*",
@@ -54,6 +55,7 @@ app.use("/api/gst-reports", gstRerportRoutes);
 app.use('/api/solutions', solutionRoutes);
 app.use('/api/case-studies', caseStudyRoutes);
 app.use('/api/revenue', revenueRoutes);
+app.use('/api/payment-details', paymentDetailsRoutes);
 
 app.use("/", (req, res) => {
   res.send("Server in Running...");

@@ -22,6 +22,7 @@ router.post('/leads/:leadId/submit-offer',
     partnerController.submitOfferToAdmin
 );
 
+router.get("/earnings", authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.getPartnerEarnings);
 router.get('/profile', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.getPartnerProfile);
 router.put('/profile', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.updatePartnerProfile);
 router.post('/withdrawals/request', authMiddleware.authenticate, roleMiddleware.isPartner, partnerController.requestWithdrawal);

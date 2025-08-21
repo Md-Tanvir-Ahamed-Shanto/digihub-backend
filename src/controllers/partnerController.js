@@ -342,6 +342,7 @@ exports.getAllPartnersForAdmin = async (req, res) => {
                 portfolioLink: true, isActive: true, rating: true, totalEarnings: true,
                 availableBalance: true, createdAt: true, updatedAt: true,
                 withdrawals: true,
+                paymentDetails: true,
                 createdBy: { select: { id: true, name: true } },
                 _count: {
                     select: {
@@ -635,4 +636,63 @@ exports.updateCredentials = async (req, res) => {
     } catch (error) {
       return res.status(500).json({ message: "Internal server error" });
     }
+};
+
+exports.getPartnerEarnings = async (req, res) => {
+  try {
+
+    const partner = await prisma.partner.findUnique({
+      where: { id: req.user.id },
+      include: {
+        assignedProjects: {
+          select: {
+            id: true,
+            title: true,
+            offerPrice: true,
+            partnerCost: true,
+            adminMargin: true,
+            status: true,
+          },
+        },
+        withdrawals: {
+          select: {
+            id: true,
+            amount: true,
+            processedAt: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!partner) {
+      return res.status(404).json({ message: 'Partner not found' });
+    }
+
+    
+    const totalProjectsEarnings = partner.assignedProjects.reduce(
+      (acc, p) => acc + Number(p.partnerCost),
+      0
+    );
+
+    const totalWithdrawals = partner.withdrawals.reduce(
+      (acc, w) => acc + Number(w.amount),
+      0
+    );
+
+    return res.json({
+      partnerId: partner.id,
+      name: partner.name,
+      totalEarnings: Number(partner.totalEarnings),
+      availableBalance: Number(partner.availableBalance),
+      calculatedProjectEarnings: totalProjectsEarnings,
+      totalWithdrawals,
+      projects: partner.assignedProjects,
+      withdrawals: partner.withdrawals,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+  }
 };
