@@ -91,11 +91,11 @@ exports.setPartnerPasswordAndActivate = async (req, res) => {
         });
 
         // You might want to redirect them to a success page or the partner login page
-        const redirectUrl = `${FRONTEND_URL}/partner/account-activated?email=${encodeURIComponent(partner.email)}`;
-        res.redirect(redirectUrl);
+        const redirectUrl = `${FRONTEND_URL}/account-activated?email=${encodeURIComponent(partner.email)}&role=partner`;
+        // res.redirect(redirectUrl);
 
         // Or if this is an API endpoint (POST/PUT), send JSON response:
-        // res.status(200).json({ message: "Partner account activated and password set successfully. You can now log in." });
+        res.status(200).json({ message: "Partner account activated and password set successfully. You can now log in." });
 
     } catch (error) {
         console.error("Partner set password and activate error:", error);
@@ -280,7 +280,7 @@ exports.createPartnerByAdmin = async (req, res) => {
                     },
                 });
 
-                const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
+                const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}&role=partner`;
                 await emailService.sendPartnerSetPasswordEmail(email, setPasswordLink, name);
                 return res.status(200).json({
                     message: "Partner account already exists but is inactive. An activation link has been re-sent to their email.",

@@ -84,7 +84,7 @@ exports.registerClient = async (req, res) => {
                         password: null, // Ensure password is null if it was never set or was cleared
                     },
                 });
-                const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
+                const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}&role=client`;
                 await emailService.sendSetPasswordEmail(email, setPasswordLink, name);
                 return res.status(200).json({
                     message: "An unverified account with this email already exists. We've resent the account setup link. Please check your email to set your password and activate your account.",
@@ -110,7 +110,7 @@ exports.registerClient = async (req, res) => {
             },
         });
 
-        const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
+        const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}&role=client`;
         await emailService.sendSetPasswordEmail(email, setPasswordLink, name);
 
         const { password: _, verificationToken: __, verificationExpires: ___, ...clientWithoutSensitiveInfo } = newClient;
@@ -172,7 +172,7 @@ exports.setClientPasswordAndActivate = async (req, res) => {
         });
 
         // You might want to redirect them to a success page or the login page
-        const redirectUrl = `${FRONTEND_URL}/account-activated?email=${encodeURIComponent(client.email)}`;
+        const redirectUrl = `${FRONTEND_URL}/account-activated?email=${encodeURIComponent(client.email)}&role=client`;
         // res.redirect(redirectUrl);
 
         // Or if this is an API endpoint (POST/PUT), send JSON response:
