@@ -30,6 +30,6 @@ router.put('/partner/issues/:id/close',authMiddleware.authenticate, closeIssue);
 router.get('/admin/issues',authMiddleware.authenticate, getAllIssues);              // Admin sees all issues
 router.put('/admin/issues/:id/status',authMiddleware.authenticate, changeStatus);   // Admin changes status
 router.delete('/admin/issues/:id',authMiddleware.authenticate, deleteIssue);        // Admin deletes issue
-router.put('/admin/issues/:id/assign',authMiddleware.authenticate, assignToPartner); // Admin assigns to partner
+router.put('/admin/issues/:id/close',authMiddleware.authenticate, closeIssue); // Admin assigns to partner
 
 module.exports = router;

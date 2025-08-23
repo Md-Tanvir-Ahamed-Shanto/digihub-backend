@@ -152,12 +152,38 @@ const getAllIssues = async (req, res) => {
       include: { responses: true },
       orderBy: { createdAt: 'desc' }
     });
-    
-    res.json({ success: true, data: tickets });
+
+    // Get unique client IDs & partner IDs
+    const clientIds = [...new Set(tickets.map(ticket => ticket.clientId))];
+    const partnerIds = [...new Set(tickets.map(ticket => ticket.partnerId).filter(Boolean))];
+
+    // Fetch clients
+    const clients = await prisma.client.findMany({
+      where: { id: { in: clientIds } },
+      select: { id: true, name: true, }
+    });
+
+    // Fetch partners
+    const partners = await prisma.partner.findMany({
+      where: { id: { in: partnerIds } },
+      select: { id: true, name: true, }
+    });
+
+    // Merge both client & partner data into tickets
+    const ticketsWithDetails = tickets.map(ticket => ({
+      ...ticket,
+      client: clients.find(c => c.id === ticket.clientId) || null,
+      partner: partners.find(p => p.id === ticket.partnerId) || null
+    }));
+
+    res.json({ success: true, data: ticketsWithDetails });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+
+
 
 // Admin changes status
 const changeStatus = async (req, res) => {
