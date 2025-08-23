@@ -2,10 +2,12 @@ const { PrismaClient } = require('../generated/prisma');
 const prisma = new PrismaClient();
 const Decimal = require('decimal.js'); // For precise decimal calculations
 
+const GST_RATE = process.env.GST_RATE || 0.1; // 10% GST by default
+
 // Helper to calculate GST and total cost
 const calculateProjectCosts = (baseCost, gstEnabled) => {
     const base = new Decimal(baseCost);
-    const gstAmount = gstEnabled ? base.mul(new Decimal('0.10')) : new Decimal(0); // Assuming 10% GST
+    const gstAmount = gstEnabled ? base.mul(new Decimal(GST_RATE)) : new Decimal(0); // Assuming 10% GST
     const totalAmount = base.add(gstAmount);
     return { gstAmount, totalAmount };
 };

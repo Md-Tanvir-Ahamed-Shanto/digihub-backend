@@ -1,8 +1,9 @@
 const { PrismaClient } = require("../generated/prisma");
 const emailService = require("../utils/emailService"); // Adjust path as needed
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:8080"; // Make sure this is defined
-const Decimal = require('decimal.js');
+const Decimal = require("decimal.js");
 const prisma = new PrismaClient();
+const GST_RATE = process.env.GST_RATE || 0.1; // 10% by default
 // Helper function to calculate client cost for a milestone
 // You might have a global admin margin, or it might be per project.
 // For simplicity, let's assume a global margin or derived from project's adminMargin
@@ -380,7 +381,7 @@ exports.approveMilestone = async (req, res) => {
     // Calculate GST amount for the invoice
     let gstAmount = new Decimal(0);
     let finalInvoiceTotal = clientCostDecimal;
-    const GST_RATE_DECIMAL = new Decimal("0.10"); // Assuming 10% GST, adjust as per your constant
+    const GST_RATE_DECIMAL = GST_RATE; // Assuming 10% GST, adjust as per your constant
 
     const applyGST =
       includesGST !== undefined
@@ -405,14 +406,15 @@ exports.approveMilestone = async (req, res) => {
           includesGSTForInvoice: applyGST, // Add this to milestone schema if different from project-level
         },
       });
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
 
       // 2. Create an Invoice for the client
       const invoice = await tx.invoice.create({
         data: {
-          invoiceNumber: `INV-${Date.now()}-${milestone.project.clientId.substring(
-            0,
-            4
-          )}`, // Generate unique invoice number
+          invoiceNumber: `INV-${dateStr}-${milestone.project.clientId
+            .substring(0, 4)
+            .toUpperCase()}`,
           amount: clientCostDecimal,
           gstAmount: gstAmount,
           totalAmount: finalInvoiceTotal,
@@ -613,7 +615,7 @@ exports.getClientMilestonesByProject = async (req, res) => {
       // Potentially include invoice details if client needs to pay
       include: {
         invoices: {
-          where: { status: "PENDING" }, // Fetch only pending invoices for this milestone
+        where: { status: { in: ["PENDING", "PAID"] } },
           select: {
             id: true,
             invoiceNumber: true,

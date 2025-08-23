@@ -5,7 +5,7 @@ const emailService = require('../utils/emailService');
 const Decimal = require('decimal.js');
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:8080';
-const DEFAULT_GST_RATE = parseFloat(process.env.GST_RATE || '0.18');
+const DEFAULT_GST_RATE = parseFloat(process.env.GST_RATE || '0.10');
 
 exports.submitLead = async (req, res) => {
     const { name, email, phone, company, projectCategory, projectTitle, description, features, budgetRange, timeline , clientId } = req.body;

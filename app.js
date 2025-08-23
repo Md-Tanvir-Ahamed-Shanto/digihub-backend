@@ -14,7 +14,7 @@ const contactRoutes = require("./src/routes/contactSubmissionRoutes");
 const withdrawalRoutes = require("./src/routes/withdrawalRoutes");
 const supportRoutes =  require("./src/routes/supportRoutes");
 const subscriptionRoutes = require("./src/routes/maintenanceSubscriptionRoutes");
-const paymentRoutes = require("./src/routes/paymentRoutes")
+const paymentsRoutes = require("./src/routes/paymentRoutes")
 const cardRoutes = require("./src/routes/paymentCardRoutes");
 const expenseRoutes = require("./src/routes/expenseRoutes");
 const gstRerportRoutes = require("./src/routes/gstReportRoutes");
@@ -22,6 +22,7 @@ const solutionRoutes = require("./src/routes/solutionRoutes");
 const caseStudyRoutes = require("./src/routes/caseStudyRoutes");
 const revenueRoutes = require("./src/routes/revenueRoutes")
 const paymentDetailsRoutes = require("./src/routes/paymentDetailsRoutes")
+const paymentRoutes = require("./src/routes/paymentAndFinanceRoutes")
 
 const corsOptions = {
   origin: "*",
@@ -49,13 +50,14 @@ app.use("/api/withdrawal", withdrawalRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/card", cardRoutes)
 app.use("/api/subscriptions", subscriptionRoutes);
-app.use("/api/payments", paymentRoutes);
+app.use("/api/payments", paymentsRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/gst-reports", gstRerportRoutes);
 app.use('/api/solutions', solutionRoutes);
 app.use('/api/case-studies', caseStudyRoutes);
 app.use('/api/revenue', revenueRoutes);
 app.use('/api/payment-details', paymentDetailsRoutes);
+app.use("/api/payment", paymentRoutes);
 
 app.use("/", (req, res) => {
   res.send("Server in Running...");

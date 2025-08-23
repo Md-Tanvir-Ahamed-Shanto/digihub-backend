@@ -9,10 +9,11 @@ const generateInvoiceNumber = () => {
     const year = date.getFullYear().toString().slice(2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
-    const randomSuffix = Math.floor(100000 + Math.random() * 900000); // 6-digit random number
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
     return `INV-${year}${month}${day}-${randomSuffix}`;
 };
 
+const GST_RATE = process.env.GST_RATE || 0.1;
 
 // --- Admin-specific Invoice Management Routes ---
 // Note: Invoices are often generated automatically (e.g., when a milestone is APPROVED)
@@ -28,7 +29,7 @@ exports.createInvoiceByAdmin = async (req, res) => {
     try {
         const baseAmount = new Decimal(amount);
         const gstEnabledBool = !!gstEnabled;
-        const gstAmount = gstEnabledBool ? baseAmount.mul(new Decimal('0.10')) : new Decimal(0);
+        const gstAmount = gstEnabledBool ? baseAmount.mul(new Decimal(GST_RATE)) : new Decimal(0);
         const totalAmount = baseAmount.add(gstAmount);
 
         const newInvoice = await prisma.invoice.create({
@@ -108,7 +109,7 @@ exports.updateInvoiceByAdmin = async (req, res) => {
         if (amount !== undefined || gstEnabled !== undefined) {
             const baseAmount = amount !== undefined ? new Decimal(amount) : currentInvoice.amount;
             const currentGstEnabled = gstEnabled !== undefined ? !!gstEnabled : currentInvoice.gstEnabled;
-            const gstAmount = currentGstEnabled ? baseAmount.mul(new Decimal('0.10')) : new Decimal(0);
+            const gstAmount = currentGstEnabled ? baseAmount.mul(new Decimal(GST_RATE)) : new Decimal(0);
             const totalAmount = baseAmount.add(gstAmount);
 
             updateData.amount = baseAmount;
