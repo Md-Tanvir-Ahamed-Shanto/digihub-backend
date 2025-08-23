@@ -32,7 +32,7 @@ exports.submitLead = async (req, res) => {
                         verificationExpires,
                     },
                 });
-                const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
+                const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}&role=client`;
                 await emailService.sendSetPasswordEmail(email, setPasswordLink, name);
                 return res.status(200).json({
                     message: "An unverified account with this email exists. We've resent the account setup link. Please check your email to set your password and activate your account.",
@@ -56,7 +56,7 @@ exports.submitLead = async (req, res) => {
                 },
             });
 
-            const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}`;
+            const setPasswordLink = `${FRONTEND_URL}/set-password?token=${verificationToken}&role=client`;
             await emailService.sendSetPasswordEmail(email, setPasswordLink, name);
         }
 

@@ -362,9 +362,6 @@ exports.markAsComplete = async (req, res) => {
       where: { id },
       select: {
         status: true,
-        adminMargin: true,
-        offerPrice: true,
-        partnerCost: true,
       },
     });
 
@@ -377,12 +374,8 @@ exports.markAsComplete = async (req, res) => {
       return res.status(409).json({ message: "Project is already marked as complete." });
     }
 
-    // 2. Calculate the revenue amount
-    const revenueAmount = project.adminMargin || (offerPrice - partnerCost) 
-    const currentMonth = new Date().toLocaleString('en-US', { month: 'short' });
-
     // Use a transaction to ensure both operations succeed or fail together
-    const [updatedProject, newRevenue] = await prisma.$transaction([
+    const [updatedProject] = await prisma.$transaction([
       // 3. Update the project status
       prisma.project.update({
         where: { id },
@@ -390,19 +383,11 @@ exports.markAsComplete = async (req, res) => {
           status: "COMPLETED",
         },
       }),
-      // 4. Create a new revenue entry
-      prisma.revenue.create({
-        data: {
-          month: currentMonth,
-          amount: revenueAmount,
-        },
-      }),
     ]);
 
     res.status(200).json({
-      message: "Project updated and revenue recorded successfully.",
+      message: "Project updated  successfully.",
       project: updatedProject,
-      revenue: newRevenue,
     });
 
   } catch (error) {

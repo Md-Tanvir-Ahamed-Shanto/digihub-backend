@@ -200,8 +200,8 @@ exports.getClientProfile = async (req, res) => {
                 phone: true, // Include phone number
                 isActive: true,
                 isEmailVerified: true,
-                hasMaintenanceSubscription: true, // Include new field
-                maintenanceSubscriptionExpiresAt: true, // Include new field
+                // hasMaintenanceSubscription: true, // Include new field
+                // maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
                 _count: {
@@ -259,8 +259,8 @@ exports.updateClientProfile = async (req, res) => {
                 phone: true, // Include phone number
                 isActive: true,
                 isEmailVerified: true,
-                hasMaintenanceSubscription: true, // Include new field
-                maintenanceSubscriptionExpiresAt: true, // Include new field
+                // hasMaintenanceSubscription: true, // Include new field
+                // maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
             },
@@ -285,8 +285,8 @@ exports.getAllClientsForAdmin = async (req, res) => {
                 phone: true, // Include phone number
                 isActive: true,
                 isEmailVerified: true,
-                hasMaintenanceSubscription: true, // Include new field
-                maintenanceSubscriptionExpiresAt: true, // Include new field
+                // hasMaintenanceSubscription: true, // Include new field
+                // maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
                 _count: {
@@ -360,8 +360,8 @@ exports.updateClientByAdmin = async (req, res) => {
                 phone: true, // Include phone
                 isActive: true,
                 isEmailVerified: true,
-                hasMaintenanceSubscription: true, // Include new field
-                maintenanceSubscriptionExpiresAt: true, // Include new field
+                // hasMaintenanceSubscription: true, // Include new field
+                // maintenanceSubscriptionExpiresAt: true, // Include new field
                 createdAt: true,
                 updatedAt: true,
             },
