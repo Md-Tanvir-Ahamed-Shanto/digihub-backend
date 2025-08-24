@@ -71,7 +71,7 @@ router.post('/:id/accept-offer',
     leadController.clientAcceptOffer
 );
 
-router.post('/:leadId/reject-offer',
+router.post('/:id/reject-offer',
     authMiddleware.authenticate,
     roleMiddleware.isClient,
     leadController.clientRejectsOffer

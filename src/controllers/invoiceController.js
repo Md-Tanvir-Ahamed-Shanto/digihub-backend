@@ -9,8 +9,9 @@ const generateInvoiceNumber = () => {
     const year = date.getFullYear().toString().slice(2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
+    const time = new Date().toISOString().split("T")[1].split(".")[0].replace(/:/g, "")
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    return `INV-${year}${month}${day}-${randomSuffix}`;
+    return `INV-${time}-${randomSuffix}`;
 };
 
 const GST_RATE = process.env.GST_RATE || 0.1;

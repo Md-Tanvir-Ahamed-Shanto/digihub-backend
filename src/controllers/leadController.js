@@ -453,7 +453,7 @@ exports.sendOfferToClient = async (req, res) => {
         }
 
         // Allow if partner has proposed an offer or it's just assigned
-        if (!['ASSIGNED_TO_PARTNER', 'PARTNER_OFFER_PROPOSED'].includes(lead.status)) {
+        if (!['ASSIGNED_TO_PARTNER', 'PARTNER_OFFER_PROPOSED','OFFER_REJECTED_BY_CLIENT'].includes(lead.status)) {
             return res.status(400).json({ success: false, message: `Cannot send offer for lead with status: ${lead.status}. Lead must have a partner offer proposed or be assigned.` });
         }
 
@@ -685,9 +685,7 @@ exports.clientRejectsOffer = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Access denied. Client authentication required.' });
         }
 
-        const { id } = req.params; // leadId
-        const { rejectionReason } = req.body; // Optional: Client can provide a reason
-
+        const { id } = req.params;
         const lead = await prisma.lead.findUnique({
             where: { id },
             include: { client: true, assignedPartner: true, processedBy: true }
@@ -709,7 +707,6 @@ exports.clientRejectsOffer = async (req, res) => {
             where: { id: lead.id },
             data: {
                 status: 'OFFER_REJECTED_BY_CLIENT',
-                rejectionReason: rejectionReason || null, // Assuming you add this field to your Lead schema
             },
             include: { client: true, assignedPartner: true, processedBy: true } // Include relations for email notifications
         });
@@ -731,7 +728,7 @@ exports.clientRejectsOffer = async (req, res) => {
                 html: `
                     <p>Dear ${updatedLead.processedBy.name},</p>
                     <p>The client <strong>${updatedLead.client.name}</strong> has rejected the offer for project <strong>"${updatedLead.projectTitle}"</strong> (Lead ID: ${updatedLead.id}).</p>
-                    ${rejectionReason ? `<p><strong>Reason:</strong> ${rejectionReason}</p>` : ''}
+                  
                     <p>View Lead: <a href="${FRONTEND_URL}/admin/leads/${updatedLead.id}">Link to Lead</a></p>
                     <p>Regards,</p>
                     <p>DIGIHUB AUST System</p>
@@ -747,7 +744,7 @@ exports.clientRejectsOffer = async (req, res) => {
                 html: `
                     <p>Dear ${updatedLead.assignedPartner.name},</p>
                     <p>The client has rejected the offer for lead <strong>"${updatedLead.projectTitle}"</strong> (Lead ID: ${updatedLead.id}).</p>
-                    ${rejectionReason ? `<p><strong>Client's Reason:</strong> ${rejectionReason}</p>` : ''}
+                 
                     <p>View Lead: <a href="${FRONTEND_URL}/partner/leads/${updatedLead.id}">Link to Lead</a></p>
                     <p>Regards,</p>
                     <p>DIGIHUB AUST System</p>

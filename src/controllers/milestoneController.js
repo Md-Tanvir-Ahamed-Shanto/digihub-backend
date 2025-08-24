@@ -406,8 +406,7 @@ exports.approveMilestone = async (req, res) => {
           includesGSTForInvoice: applyGST, // Add this to milestone schema if different from project-level
         },
       });
-      const now = new Date();
-      const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
+      const dateStr = new Date().toISOString().split("T")[1].split(".")[0].replace(/:/g, "")
 
       // 2. Create an Invoice for the client
       const invoice = await tx.invoice.create({
@@ -622,6 +621,7 @@ exports.getClientMilestonesByProject = async (req, res) => {
             totalAmount: true,
             dueDate: true,
             status: true,
+            project:true
           },
         },
       },
