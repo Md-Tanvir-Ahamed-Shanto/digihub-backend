@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 const deleteAllExceptAdmin = async (req, res) => {
   try {
     // Optional: Protect with an admin secret key
-    const secret = "superstrongkey"
+    const secret = req.headers['x-secret-key'];
     if (secret !== process.env.ADMIN_SECRET_KEY) {
       return res.status(403).json({ error: 'Unauthorized' });
     }
