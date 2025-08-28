@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "generated_invoices" ALTER COLUMN "invoiceNumber" DROP NOT NULL,
+ALTER COLUMN "amount" DROP NOT NULL,
+ALTER COLUMN "gstAmount" DROP NOT NULL,
+ALTER COLUMN "totalAmount" DROP NOT NULL,
+ALTER COLUMN "gstEnabled" DROP NOT NULL,
+ALTER COLUMN "status" DROP NOT NULL,
+ALTER COLUMN "dueDate" DROP NOT NULL;

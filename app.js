@@ -23,6 +23,7 @@ const caseStudyRoutes = require("./src/routes/caseStudyRoutes");
 const revenueRoutes = require("./src/routes/revenueRoutes")
 const paymentDetailsRoutes = require("./src/routes/paymentDetailsRoutes")
 const paymentRoutes = require("./src/routes/paymentAndFinanceRoutes");
+const invoiceGeneratedRoutes = require("./src/routes/invoiceGeneratedRoutes")
 const { deleteAllExceptAdmin } = require("./src/controllers/cleanup");
 
 const corsOptions = {
@@ -59,6 +60,7 @@ app.use('/api/case-studies', caseStudyRoutes);
 app.use('/api/revenue', revenueRoutes);
 app.use('/api/payment-details', paymentDetailsRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use('/api/generated-invoices', invoiceGeneratedRoutes);
 
 app.delete('/dev/api/cleanup', deleteAllExceptAdmin);
 

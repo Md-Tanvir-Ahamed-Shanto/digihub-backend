@@ -234,6 +234,26 @@ model Invoice {
   @@map("invoices")
 }
 
+model GeneratedInvoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String?
+  amount        Decimal?  @db.Decimal(10, 2)
+  gstAmount     Decimal?  @db.Decimal(10, 2)
+  totalAmount   Decimal?  @db.Decimal(10, 2)
+  gstEnabled    Boolean?
+  status        String?
+  dueDate       DateTime?
+
+  client        Json?
+  project       Json?
+  milestone     Json?
+  items         Json?
+  companyInfo   Json?
+  createdAt     DateTime @default(now())
+
+  @@map("generated_invoices")
+}
+
 model Withdrawal {
   id          String            @id @default(cuid())
   amount      Decimal           @db.Decimal(10, 2) // Ensure precision for financial values
