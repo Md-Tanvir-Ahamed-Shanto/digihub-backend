@@ -85,5 +85,11 @@ router.post('/:id/reject-offer',
     leadController.clientRejectsOffer
 );
 
+router.put('/:id/client-resend-offer',
+    authMiddleware.authenticate,
+    roleMiddleware.isClient,
+    leadController.clientResendOffer
+);
+
 
 module.exports = router;

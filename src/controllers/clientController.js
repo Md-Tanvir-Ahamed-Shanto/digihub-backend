@@ -417,6 +417,9 @@ exports.getClientLeads = async (req, res) => {
                 email: true,
                 phone: true,
                 companyName: true,
+                adminNotes: true,
+                clientOffer:true,
+                clientOfferTime:true,
                 projectCategory: true,
                 projectTitle: true, // Assuming this is correct as per your schema
                 description: true,

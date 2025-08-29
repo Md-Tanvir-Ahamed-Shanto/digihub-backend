@@ -115,6 +115,9 @@ model Lead {
   offerPrice             Decimal?
   partnerCost            Decimal?
   adminMargin            Decimal?
+  clientOffer             Decimal?
+  clientNotes            String?
+  adminNotes             String?
   includesGST            Boolean?  @default(false)
   notes                  String?
   partnerOfferTime       Int       @default(0)
@@ -438,6 +441,7 @@ enum LeadStatus {
   CONVERTED
   ARCHIVED
   REVIEWING
+  CLIENT_RESEND_OFFER
   ASSIGNED_TO_PARTNER
   PENDING_OFFER_REVIEW
   OFFER_SENT_TO_CLIENT

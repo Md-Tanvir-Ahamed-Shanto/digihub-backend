@@ -668,6 +668,7 @@ exports.sendOfferToClient = async (req, res) => {
         "ASSIGNED_TO_PARTNER",
         "PARTNER_OFFER_PROPOSED",
         "OFFER_REJECTED_BY_CLIENT",
+        "CLIENT_RESEND_OFFER"
       ].includes(lead.status)
     ) {
       return res.status(400).json({
@@ -700,7 +701,7 @@ exports.sendOfferToClient = async (req, res) => {
         // FIX: Changed clientOfferPrice to offerPrice as per your schema
         offerPrice: finalClientOffer,
         timeline,
-        notes, // Pass notes from req.body to the lead
+        adminNotes: notes, // Pass notes from req.body to the lead
         adminOfferPreparedAt: new Date(),
         status: "OFFER_SENT_TO_CLIENT",
         processedById: adminId, // Record which admin sent the offer
@@ -962,6 +963,113 @@ exports.clientRejectsOffer = async (req, res) => {
       where: { id: lead.id },
       data: {
         status: "OFFER_REJECTED_BY_CLIENT",
+      },
+      include: { client: true, assignedPartner: true, processedBy: true }, // Include relations for email notifications
+    });
+
+    // Send Rejection Confirmation Email to Client
+    if (updatedLead.client && updatedLead.client.email) {
+      await emailService.sendProjectRejectedNotification(
+        updatedLead.client.email,
+        updatedLead.client.name,
+        updatedLead.projectTitle // Corrected typo
+      );
+    }
+
+    // Notify Admin that client rejected the offer
+    if (updatedLead.processedBy && updatedLead.processedBy.email) {
+      await emailService.sendEmail({
+        // Using generic sendEmail for custom content
+        to: updatedLead.processedBy.email,
+        subject: `Offer Rejected by Client for Lead: "${updatedLead.projectTitle}"`,
+        html: `
+                    <p>Dear ${updatedLead.processedBy.name},</p>
+                    <p>The client <strong>${updatedLead.client.name}</strong> has rejected the offer for project <strong>"${updatedLead.projectTitle}"</strong> (Lead ID: ${updatedLead.id}).</p>
+                  
+                    <p>View Lead: <a href="${FRONTEND_URL}/admin/leads/${updatedLead.id}">Link to Lead</a></p>
+                    <p>Regards,</p>
+                    <p>DIGIHUB AUST System</p>
+                `,
+      });
+    }
+
+    // Notify Assigned Partner that client rejected the offer
+    if (updatedLead.assignedPartner && updatedLead.assignedPartner.email) {
+      await emailService.sendEmail({
+        // Using generic sendEmail for custom content
+        to: updatedLead.assignedPartner.email,
+        subject: `Offer Rejected by Client for Lead: "${updatedLead.projectTitle}"`,
+        html: `
+                    <p>Dear ${updatedLead.assignedPartner.name},</p>
+                    <p>The client has rejected the offer for lead <strong>"${updatedLead.projectTitle}"</strong> (Lead ID: ${updatedLead.id}).</p>
+                 
+                    <p>View Lead: <a href="${FRONTEND_URL}/partner/leads/${updatedLead.id}">Link to Lead</a></p>
+                    <p>Regards,</p>
+                    <p>DIGIHUB AUST System</p>
+                `,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Offer rejected successfully.",
+      data: updatedLead,
+    });
+  } catch (error) {
+    console.error("Error rejecting offer:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+// client reject and resend offer
+exports.clientResendOffer = async (req, res) => {
+  try {
+    const { notes ,clientOffer} = req.body;
+    const clientId = req.user.id;
+    if (!clientId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Client authentication required.",
+      });
+    }
+
+    const { id } = req.params;
+    const lead = await prisma.lead.findUnique({
+      where: { id },
+      include: { client: true, assignedPartner: true, processedBy: true },
+    });
+
+    if (!lead) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Lead not found." });
+    }
+
+    if (lead.clientId !== clientId) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. You are not the client for this lead.",
+      });
+    }
+
+    if (lead.status !== "OFFER_SENT_TO_CLIENT") {
+      return res.status(400).json({
+        success: false,
+        message: `Offer cannot be rejected. Current lead status is "${lead.status}".`,
+      });
+    }
+
+    const updatedLead = await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        status: "CLIENT_RESEND_OFFER",
+        clientNotes: notes,
+        clientOffer:clientOffer,
+        clientOfferTime: {
+          increment: 1,
+        },
       },
       include: { client: true, assignedPartner: true, processedBy: true }, // Include relations for email notifications
     });
