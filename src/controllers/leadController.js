@@ -313,7 +313,7 @@ exports.assignPartnerToLead = async (req, res) => {
     });
 
     if (existingPartner.email) {
-      await emailService.sendPartnerSetPasswordEmail(
+      await emailService.assignPartnersToLeads(
         existingPartner.email,
         `${FRONTEND_URL}/partner/leads/${updatedLead.id}`,
         existingPartner.name
@@ -599,7 +599,8 @@ exports.sendOfferToClient = async (req, res) => {
         .status(400)
         .json({ success: false, message: "Admin margin is required." });
     }
-    const numericAdminMargin = new Decimal(adminMargin);
+    const numericAdminMargin = parseInt(adminMargin);
+    console.log("admin",adminMargin, numericAdminMargin)
     if (numericAdminMargin.lessThan(0)) {
       return res
         .status(400)
@@ -658,10 +659,10 @@ exports.sendOfferToClient = async (req, res) => {
 
     const basePrice = lead.partnerProposedCost.plus(numericAdminMargin);
     let finalClientOffer = basePrice;
-    const gstRate = new Decimal(DEFAULT_GST_RATE);
+    const gstRate = DEFAULT_GST_RATE
 
     if (includesGST) {
-      finalClientOffer = basePrice.times(Decimal.add(1, gstRate));
+      finalClientOffer = basePrice * (1 + gstRate);
     }
 
     const updatedLead = await prisma.lead.update({

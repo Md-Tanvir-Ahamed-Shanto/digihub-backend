@@ -290,3 +290,53 @@ exports.sendProjectRejectedNotification = async (toEmail, clientName, projectNam
         throw new Error('Failed to send project rejected email.');
     }
 };
+
+exports.assignPartnersToLeads = async (toEmail, leadLink, partnerName) => {
+    try {
+        const mailOptions = {
+            from: process.env.EMAIL_FROM || '"DIGIHUB AUST Support" <support@yourdomain.com>',
+            to: toEmail,
+            subject: 'New Lead Assignment - Action Required',
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <h2 style="color: #0056b3;">New Lead Assignment!</h2>
+                    </div>
+                    <p>Hello <strong>${partnerName}</strong>,</p>
+                    <p>You've been assigned a new lead that matches your expertise and is ready for your review!</p>
+                    
+                    <p>This is a great opportunity to showcase your skills and win a new project. Please log in to your partner dashboard to:</p>
+                    
+                    <ul style="padding-left: 20px; margin: 20px 0;">
+                        <li>Review the complete project details</li>
+                        <li>Understand client requirements</li>
+                        <li>Submit your competitive proposal</li>
+                        <li>Set your timeline and pricing</li>
+                    </ul>
+                    
+                    <p style="text-align: center; margin: 30px 0;">
+                        <a href="${leadLink}" style="display: inline-block; padding: 12px 25px; background-color: #28a745; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                            View Lead Details & Submit Proposal
+                        </a>
+                    </p>
+                    
+                    <p><strong>⏰ Time is important!</strong> Early and well-crafted proposals have higher success rates.</p>
+                    
+                    <p>Best of luck with your proposal!</p>
+                    
+                    <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; text-align: center; font-size: 0.9em; color: #777;">
+                        <p>&copy; ${new Date().getFullYear()} DIGIHUB AUST. All rights reserved.</p>
+                        <p>If you have any questions, feel free to contact our <a href="mailto:${process.env.EMAIL_FROM}" style="color: #28a745; text-decoration: none;">support team</a>.</p>
+                    </div>
+                </div>
+            `,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`Lead assignment email sent to ${toEmail}: ${info.messageId}`);
+        return true;
+    } catch (error) {
+        console.error(`Error sending lead assignment email to ${toEmail}:`, error);
+        throw new Error('Failed to send lead assignment email. Please check server logs.');
+    }
+};
