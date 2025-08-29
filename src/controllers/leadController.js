@@ -601,7 +601,7 @@ exports.sendOfferToClient = async (req, res) => {
     }
     const numericAdminMargin = parseInt(adminMargin);
     console.log("admin",adminMargin, numericAdminMargin)
-    if (numericAdminMargin.lessThan(0)) {
+    if (numericAdminMargin < 0) {
       return res
         .status(400)
         .json({ success: false, message: "Admin margin cannot be negative." });
@@ -657,7 +657,7 @@ exports.sendOfferToClient = async (req, res) => {
       });
     }
 
-    const basePrice = lead.partnerProposedCost.plus(numericAdminMargin);
+    const basePrice = lead.partnerProposedCost + numericAdminMargin
     let finalClientOffer = basePrice;
     const gstRate = DEFAULT_GST_RATE
 
