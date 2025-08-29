@@ -657,13 +657,23 @@ exports.sendOfferToClient = async (req, res) => {
       });
     }
 
-    const basePrice = lead.partnerProposedCost + numericAdminMargin
+    // FIX: Ensure both values are properly converted to numbers before addition
+    const numericPartnerCost = parseFloat(lead.partnerProposedCost);
+    const basePrice = numericPartnerCost + numericAdminMargin;
+    
+    // Add debug logging to verify the calculation
+    console.log("Partner Cost:", numericPartnerCost);
+    console.log("Admin Margin:", numericAdminMargin);
+    console.log("Base Price:", basePrice);
+    
     let finalClientOffer = basePrice;
     const gstRate = DEFAULT_GST_RATE
 
     if (includesGST) {
       finalClientOffer = basePrice * (1 + gstRate);
     }
+
+    console.log("Final Client Offer:", finalClientOffer);
 
     const updatedLead = await prisma.lead.update({
       where: { id: leadId },
