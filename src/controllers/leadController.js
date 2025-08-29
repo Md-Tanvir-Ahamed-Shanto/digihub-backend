@@ -538,35 +538,6 @@ exports.resentAdminOfferPartner = async (req, res) => {
         .status(401)
         .json({ success: false, message: "Authentication required." });
     }
-    if (partnerId) {
-      const lead = await prisma.lead.update({
-        where: { id: id },
-        data: {
-          partnerProposedCost: partnerProposedCost,
-          timeline: timeline,
-          notes: notes,
-          partnerOfferTime: {
-            increment: 1,
-          },
-          status: "ASSIGNED_TO_PARTNER",
-          partnerId: partnerId,
-        },
-        include: {
-          client: {
-            select: { id: true, name: true, email: true },
-          },
-          assignedPartner: {
-            select: { id: true, name: true },
-          },
-          processedBy: {
-            select: { id: true, name: true },
-          },
-        },
-      });
-      res
-        .status(200)
-        .json({ message: "Lead updated successfully by Admin", lead: lead });
-    } else {
       const lead = await prisma.lead.update({
         where: { id: id },
         data: {
@@ -593,7 +564,7 @@ exports.resentAdminOfferPartner = async (req, res) => {
       res
         .status(200)
         .json({ message: "Lead updated successfully by Admin", lead: lead });
-    }
+    
   } catch (error) {
     console.error("Admin: Delete lead error:", error);
     if (error.code === "P2025") {
