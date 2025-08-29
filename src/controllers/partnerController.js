@@ -482,6 +482,7 @@ exports.getPartnerAssignedLeads = async (req, res) => {
                 budgetRange: true,
                 timeline: true,
                 partnerProposedCost: true,
+                notes: true,
                 partnerNotes: true,
                 partnerOfferProposedAt: true,
                 client: {

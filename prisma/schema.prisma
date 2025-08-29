@@ -25,8 +25,8 @@ model Admin {
 }
 
 model Partner {
-  id                  String       @id @default(cuid())
-  email               String       @unique
+  id                  String           @id @default(cuid())
+  email               String           @unique
   password            String?
   name                String
   skillSet            String[]
@@ -36,21 +36,21 @@ model Partner {
   profilePhoto        String?
   hourlyRate          Decimal?
   portfolioLink       String?
-  isActive            Boolean      @default(false)
-  rating              Decimal?     @default(0)
-  totalEarnings       Decimal      @default(0)
-  availableBalance    Decimal      @default(0)
-  verificationToken   String?      @unique
+  isActive            Boolean          @default(false)
+  rating              Decimal?         @default(0)
+  totalEarnings       Decimal          @default(0)
+  availableBalance    Decimal          @default(0)
+  verificationToken   String?          @unique
   verificationExpires DateTime?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  createdBy           Admin        @relation(fields: [createdById], references: [id])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  createdBy           Admin            @relation(fields: [createdById], references: [id])
   createdById         String
-  assignedProjects    Project[]    @relation(name: "AssignedProjects")
+  assignedProjects    Project[]        @relation(name: "AssignedProjects")
   milestones          Milestone[]
   withdrawals         Withdrawal[]
-  paymentDetails   PaymentDetails[]
-  assignedLeads       Lead[]       @relation(name: "AssignedLeads")
+  paymentDetails      PaymentDetails[]
+  assignedLeads       Lead[]           @relation(name: "AssignedLeads")
 
   @@map("partners")
 }
@@ -68,7 +68,6 @@ model Client {
   verificationExpires DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
-  
 
   leads        Lead[]
   projects     Project[]
@@ -118,6 +117,8 @@ model Lead {
   adminMargin            Decimal?
   includesGST            Boolean?  @default(false)
   notes                  String?
+  partnerOfferTime       Int       @default(0)
+  clientOfferTime        Int       @default(0)
 
   @@map("leads")
 }
@@ -149,6 +150,7 @@ model Project {
   milestones       Milestone[]
   payments         Payment[]
   invoices         Invoice[]
+
   @@map("projects")
 }
 
@@ -235,7 +237,7 @@ model Invoice {
 }
 
 model GeneratedInvoice {
-  id            String        @id @default(cuid())
+  id            String    @id @default(cuid())
   invoiceNumber String?
   amount        Decimal?  @db.Decimal(10, 2)
   gstAmount     Decimal?  @db.Decimal(10, 2)
@@ -244,12 +246,12 @@ model GeneratedInvoice {
   status        String?
   dueDate       DateTime?
 
-  client        Json?
-  project       Json?
-  milestone     Json?
-  items         Json?
-  companyInfo   Json?
-  createdAt     DateTime @default(now())
+  client      Json?
+  project     Json?
+  milestone   Json?
+  items       Json?
+  companyInfo Json?
+  createdAt   DateTime @default(now())
 
   @@map("generated_invoices")
 }
@@ -385,30 +387,30 @@ model Solution {
   id          String   @id @default(cuid())
   title       String   @unique
   description String
-  image       String?  
-  features    String[] 
+  image       String?
+  features    String[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("solutions")
 }
 
 model CaseStudy {
-  id            String   @id @default(cuid())
-  title         String   @unique 
-  client        String   
-  description   String
-  image         String? 
-  challenge     String
-  solution      String
-  results       String
-  technologies  String[] 
+  id           String   @id @default(cuid())
+  title        String   @unique
+  client       String
+  description  String
+  image        String?
+  challenge    String
+  solution     String
+  results      String
+  technologies String[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("case_studies") 
+  @@map("case_studies")
 }
 
 model PaymentDetails {
@@ -419,18 +421,12 @@ model PaymentDetails {
   routingNo   String?
   paypalEmail String?
   partnerId   String
-  partner     Partner @relation(fields: [partnerId], references: [id])
+  partner     Partner  @relation(fields: [partnerId], references: [id])
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt 
+  updatedAt   DateTime @updatedAt
 
   @@map("payment_details")
 }
-
-
-
-
-
-
 
 // ENUM
 

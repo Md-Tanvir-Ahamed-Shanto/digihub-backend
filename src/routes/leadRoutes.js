@@ -31,6 +31,14 @@ router.put(
   leadController.assignPartnerToLead
 );
 
+// resend offer 
+
+router.put(
+  "/:id/resend-offer",
+  authMiddleware.authenticate,
+  roleMiddleware.isAdmin,
+  leadController.resentAdminOfferPartner
+);
 
 // Admin manually updates a lead's general information (excluding offer details handled separately)
 // This includes basic updates like name, description, etc., and potentially status.

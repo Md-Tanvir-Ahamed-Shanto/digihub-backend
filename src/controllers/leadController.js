@@ -405,6 +405,61 @@ exports.deleteLeadByAdmin = async (req, res) => {
     }
 };
 
+// admin resend offer to partner 
+
+exports.resentAdminOfferPartner = async (req, res) => {
+    const { id } = req.params;
+    const { partnerProposedCost, timeline, notes } = req.body; // Input from Admin
+
+    try {
+        const adminId = req.user.id; // From authMiddleware (assuming admin role)
+
+        if (!adminId) {
+            return res.status(401).json({ success: false, message: "Authentication required." });
+        }
+        
+        // update lead and send offer to partner and isPartnerLastOffer make true in lead
+       const lead = await prisma.lead.update({
+           where: { id: id },
+           data: {
+               partnerProposedCost: partnerProposedCost,
+               timeline: timeline,
+               notes: notes,
+               partnerOfferTime: {
+                   increment: 1
+               },
+               status: 'ASSIGNED_TO_PARTNER',
+
+           },
+           include: {
+               client: {
+                   select: { id: true, name: true, email: true }
+               },
+               assignedPartner: {
+                   select: { id: true, name: true }
+               },
+               processedBy: {
+                   select: { id: true, name: true }
+               }
+           }
+       })
+
+        res.status(200).json({ message: "Lead updated successfully by Admin", lead: lead });
+    }
+
+    catch (error) {
+        console.error("Admin: Delete lead error:", error);
+        if (error.code === 'P2025') {
+            return res.status(404).json({ message: "Lead not found" });
+        }
+        if (error.code === 'P2003') {
+            return res.status(409).json({ message: "Cannot delete lead due to existing related data (e.g., foreign key constraint). Consider soft deleting or manually removing relationships." });
+        }
+        res.status(500).json({ message: "Internal server error" });
+    }
+
+
+}
 
 
 
