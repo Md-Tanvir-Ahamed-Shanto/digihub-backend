@@ -296,7 +296,12 @@ exports.getAdminMilestonesByProject = async (req, res) => {
     // For simplicity, any admin can view all milestones for any project here.
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { id: true },
+       select: {
+    id: true,
+    offerPrice: true,
+    partnerCost: true,
+    adminMargin: true,
+  },
     });
 
     if (!project) {
@@ -308,10 +313,15 @@ exports.getAdminMilestonesByProject = async (req, res) => {
     const milestones = await prisma.milestone.findMany({
       where: { projectId: projectId },
       orderBy: { order: "asc" },
-      include: { partner: { select: { id: true, name: true, email: true } } }, // Include partner details
+      include: { partner: { select: { id: true, name: true, email: true } } },
     });
+    // send milestone with main prject offerPrice partnerCost and adminMargin
+    const milestonesWithProjectDetails = milestones.map((milestone) => ({
+      ...milestone,
+      project,
+    }))
 
-    res.status(200).json({ success: true, milestones });
+    res.status(200).json({ success: true, milestones:milestonesWithProjectDetails });
   } catch (error) {
     console.error("Error fetching admin milestones:", error);
     res
